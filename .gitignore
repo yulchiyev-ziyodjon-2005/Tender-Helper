@@ -1,0 +1,87 @@
+# ============================================
+# TenderHelper — .gitignore
+# Django (Backend) + React/Vite (Frontend)
+# ============================================
+
+# ──────────────── Python / Django ────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual Environment
+venv/
+.venv/
+env/
+ENV/
+
+# Django
+*.log
+db.sqlite3
+db.sqlite3-journal
+*.mo
+*.pot
+media/
+staticfiles/
+static_collected/
+
+# Migrations (ixtiyoriy — loyihaga qarab)
+# backend/*/migrations/
+
+# ──────────────── Node.js / React ────────────────
+node_modules/
+dist/
+build/
+.cache/
+
+# Vite
+*.local
+
+# ──────────────── Environment & Secrets ────────────────
+.env
+.env.local
+.env.development
+.env.production
+.env.*.local
+
+# ──────────────── IDE & Editor ────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ──────────────── OS Files ────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+
+# ──────────────── Testing & Coverage ────────────────
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# ──────────────── Distribution / Build ────────────────
+*.egg-info/
+*.egg
+dist/
+build/
+eggs/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/

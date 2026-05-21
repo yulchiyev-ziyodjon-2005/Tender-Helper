@@ -1,0 +1,442 @@
+🏗️ TENDERHELPER — TO‘LIQ TEXNIK TOPSHIRIQ (TZ)
+📌 1-QISM: LOYIHA KONSEPSIYASI VA TEXNOLOGIK EKOSISTEMA
+1.1. LOYIHA HAQIDA UMUMIY MA'LUMOT (PROJECT OVERVIEW)
+TenderHelper — O‘zbekiston davlat xaridlari va korporativ xaridlar bozorida faoliyat yurituvchi, kichik va o‘rta biznes (SME) sub'ektlari uchun maxsus yaratilgan AI Tender Mentor (Sun'iy Intellektual Assistant) platformasidir.
+
+Muammo (The Pain Point):
+O‘zbekistonda davlat va korporativ tenderlar hajmi yiliga trillionlab so‘mni tashkil etsa-da, kichik tadbirkorlarning aksariyati byurokratiya, murakkab yuridik til, doimiy diskvalifikatsiya (hujjatdagi xatolar tufayli rad etilish) va auksionlardagi hissiy demping (zararga narx tushirib bankrot bo‘lish) sababli bu bozordan quruq qolmoqda. Mavjud bozor yechimlari (masalan, TenderZone, Tender.uz) faqat o‘tgan tarixiy statistikani ko‘rsatuvchi passiv filtr xolos.
+
+Yechim (The Core Value):
+TenderHelper bozordagi bo‘shliqni to‘ldirib, "Biz tender platformasi emasmiz, biz tender yutishga yordam beruvchi shaxsiy mentormiz" falsafasi asosida ishlaydi. Tizim foydalanuvchining raqamli identifikatori (profil ko‘rsatkichlari) bilan jonli lot shartlarini parallel tahlil qilib, tadbirkorga real yordam va strategik yo‘nalish beradi.
+
+1.2. DASTURIY TA'MINOT TEXNOLOGIYALARI (TECH STACK ARXITEKTURASI)
+Loyiha MVP va keyingi kengayish (Scale) bosqichlarida yuqori yuklamaga bardosh berishi, xavfsiz bo‘lishi va tezkor integratsiyalashishi uchun quyidagi stack tanlandi:
+
+┌────────────────────────────────────────────────────────────────────────┐
+│                          TENDERHELPER CORE STACK                       │
+├────────────────────────────────────────────────────────────────────────┤
+│  FRONTEND:   React.js + Vite + Redux Toolkit (State Management)        │
+│  MOBILE:     PWA (Progressive Web App) Mobile-First Responsive         │
+│  BACKEND:    Python 3.11+ + Django 5.0+ + Django REST Framework (DRF)  │
+│  DATABASE:   PostgreSQL (Relational Store + LIKE String Matching)      │
+│  AI ENGINE:  LangChain Framework + Gemini / OpenAI API (RAG System)    │
+│  TASKING:    Celery + Redis (Asinxron skreping va og'ir AI jarayonlar)  │
+└────────────────────────────────────────────────────────────────────────┘
+Nima uchun aynan bu texnologiyalar?
+Django (Python): Ma'lumotlar xavfsizligi yuqoriligi, tayyor ORM tizimi va Python ekotizimidagi barcha AI/LLM kutubxonalari (LangChain, OpenAI) bilan to‘g‘ridan-to‘g‘ri va uzilishlarsiz integratsiya bo‘lishi uchun.
+
+React.js + PWA: Foydalanuvchiga real vaqt rejimida dinamik grafiklar, shaffof AI tahlil panellari va 25+ filtrli qidiruvni o‘ta tezkor taqdim etish uchun. PWA esa tadbirkorlar telefoniga App Store/Play Market'ni chetlab o‘tib, ilova ko‘rinishida o‘rnatilishini ta'minlaydi.
+
+PostgreSQL (LIKE / __icontains qidiruvi): MVP bosqichida murakkab qidiruv tizimlarini (Elasticsearch va hk) o‘rnatib vaqt yo‘qotmaslik va algoritmik murakkablikni optimallashtirish uchun Django ORM ning ichki matnli qidiruv imkoniyatlaridan maksimal foydalaniladi.
+
+1.3. TEXNOLOGIK VAZIFALAR VA TIZIM ROllARI (FUNCTIONAL RESPONSIBILITIES)
+Tizim komponentlarining har biri ekotizimda o‘zining qat'iy va mustaqil vazifasiga ega:
+
+1. Backend (Django REST Framework) Vazifalari:
+Data Aggregator (Skreping): xarid.uzex.uz, dxarid.uzex.uz, exarid.uzex.uz va e-auksion.uz portallaridan yangi lotlarni, ularning yuridik va texnik hujjatlarini fon rejimida uzluksiz tortish va bazaga saqlash.
+
+User Engine & Authentication: OneID va STIR orqali foydalanuvchilarni xavfsiz ro‘yxatdan o‘tkazish, ularning profillarini o‘tmishdagi tenderlar statistikasi bilan mahkamlash.
+
+API Gateway: Frontend (React) so‘rovlariga JSON formatida ma'lumot uzatish, tarif cheklovlari va ruxsatnomalarni (Permissions) nazorat qilish.
+
+Financial Engine: O‘zbekiston davlat xaridlari qonunchiligidagi amaldagi 12% QQS va 0.15% UzEx operatorlik komissiya haqini kalkulyatorda matematik hisoblash mantig‘ini yuritish.
+
+2. Frontend (React.js + PWA) Vazifalari:
+Responsive User Dashboard: Mobil va kompyuter ekranlariga 100% moslashuvchi, minimalist, cartoon-elementlarsiz jiddiy FinTech interfeysi.
+
+Interactive Search & Filters Panel: Foydalanuvchi qidiruv tugmasini bosganda, Django bazasidagi ma'lumotlarni 25+ parametr (hudud, narx, muddat va hk) bo‘yicha silliq animatsiyalar bilan saralab ko‘rsatish.
+
+Visual Progress Flow Indicator: AI o‘ta og‘ir lot hujjatlarini tahlil qilayotgan vaqtda foydalanuvchi zerikib qolmasligi va jarayon shaffofligini tushunishi uchun statuslarni interaktiv ko‘rsatib turish.
+
+3. AI Moduli (LangChain + RAG) Vazifalari:
+Automated Context Loader: Tanlangan lot hujjatlarining matnini bo‘laklarga (chunks) ajratish va tizim hotirasiga vaqtinchalik joylash.
+
+Compliance & Red Flag Detection: Matn ichidan O‘zDSt, GOST va ISO standartlarini qidirib topish, shubhali tor shartlarni (Lobbichilik belgilarini) aniqlash.
+
+Proposal Generator: Profil va lot ma'lumotlarini birlashtirib, davlat andozalariga mos keladigan tayyor yuridik takliflar va Tijorat Taklifi (Commercial Offer) matnini inson aralashuvisiz yozib berish.
+
+1.4. TIZIM FOYDALANUVCHILARI VA ROllAR MATRITSASI
+Tizimga kiruvchi sub'ektlar 3 xil asosiy rolga bo‘linadi va har birining dashboard interfeysi turlicha shakllanadi:
+
+Yakka tartibdagi tadbirkor (YaTT) / Kichik biznes: Yuristi yo‘q, byurokratiyadan qo‘rqadi. Tizim unga "Mentor" tilida, oddiy va yo‘naltiruvchi interfeys ko‘rsatadi.
+
+MChJ / Yirik kompaniyalar: Jamoaviy ishlash (Team mode) rejimiga ega. Bir nechta xodimlari bitta tender loyihasi ustida ishlay oladi, raqobatchilar razvedkasi va chuqur moliyaviy stress-testlar ko‘rinadi.
+
+Tizim Administratori (Siz va jamoangiz): Skreping jarayonini, tariflar holatini, AI modullarining ishlash yuklamasini va foydalanuvchilar oqimini nazorat qiluvchi panel.
+
+📌 2-QISM: MA'LUMOTLAR BAZASI ARXITEKTURASI (POSTGRESQL & DJANGO MODELS)
+Ushbu arxitektura MVP bosqichida PostgreSQL bazasidan samarali foydalanish, foydalanuvchi profilini mustahkam qulflash (Freeze Profile), lotlarni to‘g‘ri agregatsiya qilish va Enterprise foydalanuvchilari uchun jamoaviy ishlash (Team mode) tizimini ta'minlash uchun mo‘ljallangan.
+
+2.1. FOYDALANUVCHILAR VA KOMPANIYALAR BLOKI (USER & PROFILE MANAGEMENT)
+1. CustomUser modeli (Tizim foydalanuvchilari)
+Django standart AbstractUser modelidan kengaytiriladi. Tizimga kirish OneID yoki klassik telefon raqami orqali amalga oshiriladi.
+
+Maydonlar (Fields):
+
+id: UUIDField (Primary Key, xavfsizlik uchun an'anaviy int ishlatilmaydi).
+
+phone_number: CharField(max_length=15, unique=True) — Asosiy login identifikatori.
+
+full_name: CharField(max_length=255) — Foydalanuvchining to‘liq ismi.
+
+role: CharField (Choices: admin, user, manager, viewer) — Tizimdagi huquq doirasi.
+
+is_active: BooleanField(default=True).
+
+date_joined: DateTimeField(auto_now_add=True).
+
+2. CompanyProfile modeli (Korxona Raqamli Dosyasi — Mahkamlangan Profil)
+OneID yoki STIR kiritilganda avtomatik to‘ladigan va foydalanuvchiga bog‘lanadigan asosiy jadval.
+
+Maydonlar (Fields):
+
+id: UUIDField (Primary Key).
+
+user: ForeignKey(CustomUser, on_delete=False) — Profil egasi bo‘lgan foydalanuvchi (Tadbirkor).
+
+stir: CharField(max_length=9, unique=True) — Korxona STIR (INN) raqami.
+
+company_name: CharField(max_length=500) — Korxonaning rasmiy to‘liq nomi.
+
+company_type: CharField (Choices: yatt, mchj, aj, tt) — Huquqiy shakli.
+
+industry: CharField(max_length=255) — Onboarding paytida tanlangan yoki guruhlangan asosiy soha (qurilish, IT, va hk).
+
+experience_level: CharField (Choices: beginner, intermediate, expert).
+
+registration_date: DateField — Davlat ro‘yxatidan o‘tgan sanasi (Soliq bazasidan).
+
+ustav_fondi: DecimalField(max_digits=18, decimal_places=2, default=0.00) — Milliy valyutada (UZS).
+
+has_vat: BooleanField(default=False) — QQS (12%) to‘lovchimi yoki yo‘qmi.
+
+current_tariff: CharField (Choices: free, pro, enterprise, default=free).
+
+tariff_expires_at: DateTimeField(null=True, blank=True) — Obuna tugash vaqti.
+
+raw_tax_data: JSONField(default=dict) — Soliq va statistika qo‘mitasidan kelgan barcha qo‘shimcha ochiq ma'lumotlar ombori.
+
+2.2. TENDER LOTLARI VA AGREGATOR BLOKI (TENDER AGGREGATION ENGINE)
+3. TenderLot modeli (Yagona Tenderlar Ombori)
+To‘rtta milliy portaldan skreping qilinadigan barcha lotlar shu jadvalga tushadi. Qidiruv paneli aynan shu jadval ustida Django ORM ning LIKE (__icontains) operatori orqali ishlaydi.
+
+Maydonlar (Fields):
+
+id: UUIDField (Primary Key).
+
+lot_number: CharField(max_length=100, unique=True) — Portallardagi rasmiy lot raqami.
+
+platform_source: CharField (Choices: xarid_uzex, dxarid_uzex, exarid_uzex, e_auksion) — Manba portal.
+
+title: TextField() — Tender e'loni nomi (Qidiruv asosan shu maydon bo‘yicha LIKE yordamida bo‘ladi).
+
+buyer_name: CharField(max_length=500) — Buyurtmachi tashkilot nomi (Qidiruv LIKE operatori ulangan ikkinchi maydon).
+
+start_price: DecimalField(max_digits=18, decimal_places=2) — Boshlang‘ich narx (UZS).
+
+zakalat_amount: DecimalField(max_digits=18, decimal_places=2, default=0.00) — Zakalat puli miqdori.
+
+region: CharField(max_length=100) — Yetkazib berish yoki bajarilish hududi (Viloyat/Shahar).
+
+category: CharField(max_length=255) — Tizim tomonidan klassifikatsiya qilingan soha.
+
+posted_date: DateTimeField() — E'lon qo‘yilgan sana.
+
+deadline: DateTimeField() — Ariza topshirishning yakuniy muddati.
+
+status: CharField(max_length=50, default='active') — Lot holati (active, completed, cancelled).
+
+raw_portal_url: URLField() — Rasmiy manbaga to‘g‘ridan-to‘g‘ri havola.
+
+4. TenderDocumentChunk modeli (RAG xotirasi va Hujjat bo'laklari)
+Tizim lotning hujjatlarini orqa fonda yuklab olgach, matnlarni bo‘laklarga bo‘lib saqlaydigan jadval.
+
+Maydonlar (Fields):
+
+id: UUIDField (Primary Key).
+
+tender_lot: ForeignKey(TenderLot, on_delete=models.CASCADE, related_name='chunks').
+
+file_name: CharField(max_length=255) — Asl fayl nomi (masalan, texnik_shart.pdf).
+
+chunk_index: IntegerField() — Matn tartib raqami.
+
+raw_text: TextField() — Skanerlangan yoki o‘qilgan toza matn parchasi.
+
+embedding: VectorField(dimensions=384, null=True) — Keyinchalik Pgvector ulansa, semantic qidiruv uchun embedding maydoni (MVP uchun ixtiyoriy, matnli o‘qish majburiy).
+
+2.3. AI TAHLIL VA RISK NOMINATSALARI BLOKI (AI ANALYSIS & ANNOTATIONS)
+5. AITenderAnalysis modeli (Shaffof Tahlil Natijalari)
+AI har bir lotni foydalanuvchi korxonasi bilan solishtirganda shakllanadigan interaktiv hisobot jadvali.
+
+Maydonlar (Fields):
+
+id: UUIDField (Primary Key).
+
+company: ForeignKey(CompanyProfile, on_delete=models.CASCADE).
+
+tender_lot: ForeignKey(TenderLot, on_delete=models.CASCADE).
+
+analysis_status: CharField (Choices: pending, processing_docs, checking_compliance, detecting_red_flags, completed, failed).
+
+eligibility_score: IntegerField(default=0) — Muvozanat balli (0-100% oraliqda).
+
+summary_text: TextField(null=True) — Oddiy tildagi qisqa tahlil xulosasi.
+
+missing_documents: JSONField(default=list) — Tadbirkorda yetishmayotgan hujjatlar ro‘yxati.
+
+red_flags: JSONField(default=list) — Aniqlangan korrupsion risklar yoki sun'iy lobbichilik shartlari ro‘yxati.
+
+lobbying_index: IntegerField(default=0) — Lobbichilik foiz ko‘rsatkichi.
+
+created_at: DateTimeField(auto_now_add=True).
+
+2.4. MOLIYAVIY STRATEGTYA VA JAMOA REJIMI BLOKI (FINANCE & COLLABORATION)
+6. SmartCalculator modeli (Anti-Demping va Stop-Loss)
+O‘zbekiston soliq va birja komissiyalari (12% QQS va 0.15% operator haqi) mantiqini saqlovchi jadval.
+
+Maydonlar (Fields):
+
+id: UUIDField (Primary Key).
+
+analysis: OneToOneField(AITenderAnalysis, on_delete=models.CASCADE, related_name='calculator').
+
+raw_material_cost: DecimalField(max_digits=18, decimal_places=2, default=0.00) — Xomashyo tannarxi.
+
+logistics_cost: DecimalField(max_digits=18, decimal_places=2, default=0.00) — Logistika/Transport xarajati.
+
+labor_cost: DecimalField(max_digits=18, decimal_places=2, default=0.00) — Ish haqi xarajatlari.
+
+other_expenses: DecimalField(max_digits=18, decimal_places=2, default=0.00) — Boshqa qo‘shimcha xarajatlar.
+
+calculated_vat: DecimalField(max_digits=18, decimal_places=2, default=0.00) — Avtomat hisoblangan 12% QQS.
+
+calculated_operator_fee: DecimalField(max_digits=18, decimal_places=2, default=0.00) — Avtomat hisoblangan 0.15% UzEx haqi.
+
+min_safe_price: DecimalField(max_digits=18, decimal_places=2, default=0.00) — Tizim belgilagan Stop-Loss (Tahlika chegarasi) narxi.
+
+recommended_price: DecimalField(max_digits=18, decimal_places=2, default=0.00) — AI tavsiya qilgan optimal narx taklifi.
+
+7. TeamCollaborationTask modeli (Enterprise Tarif Uchun Jamoaviy Virtual Xona)
+Bitta tender loyihasi ustida bir nechta xodimlarning ishlash statuslarini boshqaruvchi panel jadvali.
+
+Maydonlar (Fields):
+
+id: UUIDField (Primary Key).
+
+tender_lot: ForeignKey(TenderLot, on_delete=models.CASCADE).
+
+company: ForeignKey(CompanyProfile, on_delete=models.CASCADE).
+
+assigned_to: ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, related_name='tasks') — Mas'ul xodim.
+
+task_title: CharField(max_length=255) — Vazifa nomi (masalan: "Soliqdan 0-shakl ma'lumotnomani olish").
+
+status: CharField (Choices: todo, in_progress, done, default=todo) — Status tracking.
+
+due_date: DateTimeField() — Vazifa yakunlanishi kerak bo‘lgan muddat.
+
+updated_at: DateTimeField(auto_now=True).
+
+2.5. RAQOBATCHILAR BAZASI BLOKI (COMPETITOR INTELLIGENCE — ENTERPRISE EXCLUSIVE)
+8. CompetitorDossier modeli (B2B Razvedka)
+Bozordagi dominant kompaniyalar xulq-atvorini va o‘tmishdagi g‘alabalarini tahlil qilish jadvali.
+
+Maydonlar (Fields):
+
+id: UUIDField (Primary Key).
+
+competitor_name: CharField(max_length=500) — Raqobatchi kompaniya nomi.
+
+competitor_stir: CharField(max_length=9, null=True, blank=True).
+
+dominant_category: CharField(max_length=255) — Ko‘p yutadigan asosiy sohasi.
+
+total_wins: IntegerField(default=0) — Umumiy g‘olib bo‘lgan tenderlar soni.
+
+avg_price_drop_percentage: DecimalField(max_digits=5, decimal_places=2, default=0.00) — Auksion vaqtida o‘rtacha necha foizgacha narx tushira olish ko‘rsatkichi.
+
+Juda toʻgʻri yoʻnalish. Maʼlumotlar bazasi va texnik stek aniq boʻlgandan keyin, eng optimal qadam — frontend qismini, interfeyslarni va foydalanuvchi qanday oqim (User Flow) orqali harakatlanishini belgilab olishdir.
+
+Bu — 3-QISM: UI/UX Skrin Layoutlari, PWA Spetsifikatsiyasi va Interaktiv Foydalanuvchi Oqimi. Buni ham eng minimal, lekin hakamlar va hakatondagi MVP uchun eng koʻzga koʻrinadigan (high-impact) usullar bilan shakllantiramiz.
+
+Siz bu qismni tasdiqlaganingizdan soʻng, Antigravity AI muhitidagi Claude’ga: "Siz endi toʻliq frontend dasturchisiz, mana bu UI/UX layoutlar asosida React va Tailwind kodlarini yozasiz" deb rolimizni oʻzgartirishimiz oson boʻladi.
+
+🏗️ TENDERHELPER — TO‘LIQ TEXNIK TOPSHIRIQ (TZ)
+📌 3-QISM: UI/UX INTERFEYS LAYOUTLARI VA PWA FOYDALANUVCHI OQIMI (USER FLOW)
+Bizning dizayn falsafamiz: Minimalizm, toʻq va professional ranglar, jiddiy FinTech interfeysi. Animatsiyali yoki multfilm uslubidagi elementlar mutloq boʻlmaydi. PWA (Progressive Web App) tufayli barcha ekranlar mobil telefonda xuddi alohida ilovadek (Native App) silliq ishlashi shart.
+
+3.1. FOYDALANUVCHI OQIMI (CRITICAL USER JOURNEY)
+Foydalanuvchi tizimga kirgandan boshlab maqsadga erishguncha boʻlgan eng optimal bosqichlar zanjiri:
+
+[ OneID / STIR Login ] 
+          │
+          ▼
+[ 3 ta Savolli Onboarding ] ──► (Profil va Tarixni bazaga avtomat mahkamlash)
+          │
+          ▼
+[ Smart Dashboard ] ──► (Faqat mos lotlarni LIKE qidiruvi orqali topish)
+          │
+          ▼
+[ Interaktiv AI Skaner ] ──► (Orqa fonda RAG ishlaydi, foydalanuvchi progressni ko'radi)
+          │
+          ▼
+[ Hisobot va Stop-Loss ] ──► (12% QQS / 0.15% komissiyali kalkulyator va Red Flags)
+          │
+          ▼
+[ B2G Hujjat Yuklash ] (Tijorat taklifini PDF/Word formatda yuklab olish)
+3.2. INTERFEYS EKRANLARI STRUKTURASI (SCREEN LAYOUTS)
+EKRAN 1: OneID Login va Aqlli Onboarding
+Vizual koʻrinish: Markazda toza login bloki. Davlat xavfsizlik tizimi hidi kelib turuvchi minimalist dizayn.
+
+Layout elementlari:
+
+OneID bilan kirish yoki STIR orqali kirish tugmalari.
+
+Tizimga birinchi marta kirganda ochiladigan 3 ta savolli modal oyna:
+
+Sohangizni tanlang: (Qurilish, IT, Logistika, Tibbiyot, Ta'minot).
+
+Tenderlardagi tajribangiz: (Yangi boshlovchi / Oʻrtacha / Professional).
+
+Maqsadingiz: (Hujjat tayyorlash / Narx hisoblash / Raqobatchilarni kuzatish).
+
+Orqa fon logikasi: STIR kiritilishi bilan tizim soliq bazasidan oʻtmishdagi tenderlar tarixini skreping qilib, profilga yopishtiradi.
+
+EKRAN 2: Smart Dashboard (Asosiy Oyna)
+Vizual koʻrinish: Chap tomonda (yoki mobil telefonda pastki navigatsiyada) 4 ta asosiy boʻlim: Tenderlar, Mening Tahlillarim, Kalkulyator, Jamoa.
+
+Layout elementlari:
+
+Yuqorida Markazda: Ulkan aqlli qidiruv paneli (Search Bar). Foydalanuvchi lot raqami yoki nomini yozganda Django orqasidagi LIKE operatori real vaqtda lotlarni süzib beradi.
+
+Oʻng tomonda: 25+ kengaytirilgan filtrlar tugmasi (Hudud, Narx diapazoni, Platforma manbasi: xarid, dxarid, exarid, e-auksion).
+
+Markaziy qism: Foydalanuvchi profiliga mos keladigan lotlar kartochkalari roʻyxati. Har bir kartochkada: Lot raqami, Boshlangʻich narx, Deadline va tizim tomonidan berilgan dastlabki moslik balli (Match Score: e.g., 85%) koʻrinadi.
+
+EKRAN 3: Interaktiv AI Skaner va Shaffof Tahlil Paneli
+Foydalanuvchi dashboarddan birorta lotni tanlaganda ochiladigan eng asosiy vizual ekran. Foydalanuvchi qoʻlda tender hujjatlarini yuklamaydi, tizim oʻzi yuklab oladi.
+
+Vizual koʻrinish: Ekran ikki qismga boʻlinadi (Mobil qurilmada ketma-ket).
+
+Layout elementlari:
+
+Chap ustun (Foydalanuvchi Hujjatlari): Foydalanuvchi oʻzining tenderda yutish uchun manfaatli deb bilgan hujjatlarini (sertifikat, balans va hk) yuklaydigan kichik drag-and-drop maydoni.
+
+Oʻng ustun (Shaffof Progress Bar): AI fonda davlat portallaridan lot hujjatlarini skanerlayotganda foydalanuvchiga jarayon shaffof koʻrinib turadi:
+
+🟢 1. "Lotning barcha nizom va spetsifikatsiyalari yuklab olindi" (Checkbox-OK)
+
+🟡 2. "Me'yoriy talablar O'zDSt va GOST standartlari bo'yicha tahlil qilinmoqda..." (Aylanuvchi Loader animatsiyasi)
+
+⚪ 3. "Sizning hujjatlaringiz tender talablariga solishtirilmoqda..." (Kutish holati)
+
+EKRAN 4: Yakuniy Xulosa va Anti-Demping Kalkulyatori Panel
+Tahlil 100% boʻlgandan keyin ochiladigan va tadbirkorga strategiya beradigan oyna.
+
+Layout elementlari:
+
+Tab 1: AI Xulosasi va Red Flags: Oddiy tilda yozilgan matn. "Tender shartlarida muayyan brendga moslab yozilgan lobbichilik belgilari aniqlandi (Lobbichilik indeksi: 75%). Qatnashishda ehtiyot bo'ling." Yetishmayotgan hujjatlar roʻyxati qizil rangda ajratib koʻrsatiladi.
+
+Tab 2: Smart Narx Kalkulyatori: Tadbirkor oʻz xarajatlarini (xomashyo, transport, ish haqi) yozadigan input maydonlari. Pastki qismda avtomat ravishda +12% QQS va +0.15% UzEx operator komissiyasi real raqamlarda qoʻshib koʻrsatiladi va eng asosiysi — Stop-Loss (Tahlika chegarasi) qizil chizigʻi chiziladi.
+
+EKRAN 5: Jamoaviy Virtual Xona (Enterprise exclusive)
+Visual koʻrinish: Proyekt menejment tizimlariga oʻxshash minimalist guruh ishlari paneli (Status tracking).
+
+Layout elementlari:
+
+Tanlangan tender boʻyicha vazifalar doskasi: To Do, In Progress, Done.
+
+Har bir xodimga vazifa biriktirish (Assignee) va topshirish muddatini (Due Date) belgilash tugmalari.
+
+Oʻng tomonda ushbu lotga tegishli raqobatchilarning "Raqamli dosyasi" (Oʻtmishda necha marta yutgani, oʻrtacha narxni necha foizgacha tushira olishi haqida Big Data statistikasi).
+
+3.3. PWA (PROGRESSIVE WEB APP) STRATEGIK XUSUSIYATLARI
+Ilova brauzerda ham, telefonga oʻrnatilganda ham mobil-ilova (Native) kabi ishlashi uchun React jamoasi quyidagi optimal PWA qoidalarini kiritishi shart:
+
+Service Workers & Cache: Platformaning interfeys elementlari, CSS va asosiy shriftlar keshlanadi. Tarmoq (internet) sekinlashganda ham interfeys qotib qolmaydi.
+
+Push Notifications: Tender topshirish muddatiga (Deadline) 3 kun, 1 kun yoki 12 soat qolganda foydalanuvchi telefoniga avtomat eslatma (Push) boradi.
+
+Offline Mode Lite: Internet butunlay uzilib qolganda ham foydalanuvchi oʻzining oxirgi koʻrgan va tahlil qilingan tenderlari tarixini va hisoblangan kalkulyator natijalarini koʻra oladi.
+
+📌 4-QISM: BACKEND ARXITEKTURASI, API INTEGRATSIYASI VA ASINXRON JARAYONLAR (CELERY/REDIS)
+Ushbu boʻlim Django REST Framework (DRF) arxitekturasini toʻgʻri qurish, davlat xaridlari portallaridan lotlarni uzluksiz yuklash va LangChain/RAG modullarini tizimga xavfsiz integratsiya qilish mexanizmlarini belgilab beradi.
+
+4.1. DATA AGGREGATION & PIPELINE (SKREPING VA MA'LUMOTLAR OQIMI)
+Tizimning jonli ishlashi va lotlarning doimiy yangilanib turishi Celery (Beat) va Redis orqali asinxron rejimda boshqariladi. MVP yuklamasini kamaytirish uchun ma'lumotlar oqimi quyidagi davriylikda ishlaydi:
+
+1. Avtomatik Lot Skreperi (Periodic Tasks)
+Ishlash vaqti: Har 30 daqiqada bir marta (Celery Beat crontab orqali).
+
+Vazifasi: xarid.uzex.uz, dxarid.uzex.uz, exarid.uzex.uz va e-auksion.uz portallarining ochiq ma'lumotlar oqimi (RSS, JSON API yoki HTML parser) skanerlanadi.
+
+Mantiq: Faqat oxirgi tekshiruvdan keyin qoʻshilgan, statusi active boʻlgan yangi lotlar bazaga yoziladi. Agar lot raqami TenderLot jadvalida allaqachon mavjud boʻlsa, uning muddati (deadline) va joriy narxi yangilanadi (upsert logikasi).
+
+2. Hujjatlarni Avtomat Yuklash (Background Document Downloader)
+Foydalanuvchi ixtiyoriy lotni tanlab, "Tahlilni boshlash" tugmasini bosganda, React frontend API-ga soʻrov yuboradi.
+
+Django backend bu ogʻir jarayonni HTTP soʻrov ichida bajarmaydi (timeout boʻlmasligi uchun) va uni darhol Celery Worker navbatiga (Queue) tashlaydi.
+
+Celery Worker lotga biriktirilgan texnik spetsifikatsiya va nizom fayllarini (.pdf, .docx) yuklab oladi, matnga oʻgiradi va TenderDocumentChunk jadvaliga boʻlaklab saqlaydi.
+
+4.2. API ENDPOINTS MATRIX (BACKEND API SHINASI)
+Frontend va backend oʻrtasidagi aloqa toʻliq JSON formatida, DRF TokenAuthentication (yoki JWT) orqali himoyalangan holda amalga oshiriladi.
+
+🔐 1. Auth & Profile Endpoints
+POST /api/v1/auth/oneid/ — OneID login tokenini qabul qilish va foydalanuvchini avtomat roʻyxatdan oʻtkazish/tizimga kiritish.
+
+POST /api/v1/company/onboarding/ — 3 ta onboarding savollari javobini qabul qilish va profilni mahkamlash.
+
+GET /api/v1/company/profile/ — Raqamli dosye va oʻtmishdagi tenderlar statistikasini qaytarish.
+
+🧭 2. Tender & Search Endpoints
+GET /api/v1/tenders/ — Barcha lotlar roʻyxati.
+
+Qidiruv logikasi (Django Backend):
+
+Python
+queryset = TenderLot.objects.filter(status='active')
+search_query = request.query_params.get('search', None)
+if search_query:
+    # Django ORM orqali LIKE / __icontains qidiruvi
+    queryset = queryset.filter(Q(title__icontains=search_query) | Q(buyer_name__icontains=search_query))
+Filtrlar: ?region=Toshkent&min_price=10000000&source=xarid_uzex formatidagi 25+ parametrlar shu endpointda filtrlanadi.
+
+🤖 3. AI Analysis & Calculator Endpoints
+POST /api/v1/analysis/start/ — Lot ID va foydalanuvchi yuklagan manfaatli hujjatlarni qabul qilib, asinxron AI tahlilini (AITenderAnalysis) boshlash.
+
+GET /api/v1/analysis/<uuid:id>/status/ — React progress-bar uchun joriy holatni (processing_docs, checking_compliance, completed) qaytaruvchi endpoint.
+
+POST /api/v1/analysis/<uuid:id>/calculate/ — Tadbirkor kiritgan xarajatlar asosida amaldagi 12% QQS va 0.15% birja komissiyasini hisoblab, Stop-Loss chizigʻini qaytarish.
+
+GET /api/v1/analysis/<uuid:id>/export-proposal/ — Tayyorlangan tijorat taklifini Word/PDF koʻrinishida yuklab olish.
+
+4.3. CORE AI & LANGCHAIN INTEGRATION PIPELINE
+Tizimning intellektual yadrosi LangChain orqali quyidagi qat'iy ketma-ketlikda ishlaydi:
+
+[ Celery Worker Faylni Yuklaydi ]
+                │
+                ▼
+[ Text Splitter (Chunk size: 1000, Overlap: 200) ]
+                │
+                ▼
+[ Prompt Template Injection (O'zbekiston Qonunchiligi RAG) ]
+                │
+                ▼
+[ LLM Call (Gemini/OpenAI) ] ──► [ Structured JSON Output JSONParser ]
+Prompt Engineering Guardrail (AI uchun Yoʻriqnoma):
+AI modeliga soʻrov yuborilganda, prompt ichiga Oʻzbekiston Respublikasining "Davlat xaridlari toʻg‘risida"gi qonuni normalari va tizimning qat'iy vazifalari majburiy ravishda "System Prompt" sifatida yuklanadi:
+
+"Siz TenderHelper tizimining yetakchi huquqiy va texnik tahlilchisiz. Berilgan tender matni ichidan faqat O'zDSt, GOST va ISO standartlarini ajratib oling. Agar shartlar ichida raqobatni cheklovchi, faqat bitta brendga moslangan tor qoidalar bo'lsa, ularni 'Red Flags' ro'yxatiga kiriting va lobbichilik indeksini foizda hisoblang. Javobni faqat va faqat belgilangan qat'iy JSON formatida qaytaring."
+
+4.4. SECURITY & EXCEPTION HANDLING (XAVFSIZLIK VA XATOLIKLARNI BOSHQARISH)
+1. API Rate Limiting (Hujum va Yuklamadan Himoya)
+Anvondor foydalanuvchilar (Freemium): Kuniga maksimal 3 ta AI tahlil soʻrovi va daqiqasiga koʻpi bilan 15 ta qidiruv soʻrovi (AnonRateThrottle).
+
+PRO va Enterprise: Cheksiz soʻrovlar, lekin tizimni skreper botlardan asrash uchun daqiqasiga maksimal 100 ta soʻrov cheklovi (UserRateThrottle).
+
+2. AI Hallucination & Timeout Guard (Xatoliklar ssenariysi)
+Agar tashqi AI API (OpenAI/Gemini) vaqtinchalik uzilib qolsa yoki 10 soniya ichida javob bermasa, tizim foydalanuvchiga xatolik koʻrsatmaydi. AITenderAnalysis statusi failed holatiga oʻtadi va Celery avtomatik ravishda soʻrovni yana 1 marta qayta bajarishga urinadi (retry mexanizmi).
+
+AI qaytargan javob JSON formatida boʻlmasa, backend ichidagi SafeJSONParser uni tozalab, standart koʻrinishga keltiradi, bu esa frontend (React) arxitekturasining qulab tushishini (crash boʻlishini) 100% oldini oladi.
