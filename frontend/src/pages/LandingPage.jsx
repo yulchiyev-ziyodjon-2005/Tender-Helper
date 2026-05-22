@@ -88,10 +88,10 @@ export default function LandingPage() {
               <ThemeToggle />
               <LanguageSwitcher />
               
-              <Link to="/login" className="hidden sm:inline-flex text-sm font-medium text-surface-700 dark:text-surface-200 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
+              <Link to="/dashboard" className="hidden sm:inline-flex text-sm font-medium text-surface-700 dark:text-surface-200 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
                 Kirish
               </Link>
-              <Link to="/login" className="inline-flex items-center justify-center px-5 py-2.5 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors shadow-sm shadow-primary-600/20">
+              <Link to="/dashboard" className="inline-flex items-center justify-center px-5 py-2.5 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors shadow-sm shadow-primary-600/20">
                 Boshlash
               </Link>
             </div>
@@ -134,7 +134,7 @@ export default function LandingPage() {
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link to="/login" className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 text-base font-semibold text-white bg-primary-600 rounded-xl hover:bg-primary-700 transition-all shadow-lg shadow-primary-600/25 hover:shadow-xl hover:shadow-primary-600/30 hover:-translate-y-0.5">
+              <Link to="/dashboard" className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 text-base font-semibold text-white bg-primary-600 rounded-xl hover:bg-primary-700 transition-all shadow-lg shadow-primary-600/25 hover:shadow-xl hover:shadow-primary-600/30 hover:-translate-y-0.5">
                 {t('landing.login_btn', 'Platformaga kirish')}
                 <ChevronRight className="w-5 h-5" />
               </Link>
@@ -165,7 +165,7 @@ export default function LandingPage() {
               </h2>
               <p className="text-surface-600 dark:text-surface-400">O'zbekistondagi so'nggi davlat va korporativ xaridlar ro'yxati.</p>
             </div>
-            <Link to="/login" className="hidden sm:inline-flex items-center gap-2 text-primary-600 dark:text-primary-400 font-medium hover:underline">
+            <Link to="/dashboard" className="hidden sm:inline-flex items-center gap-2 text-primary-600 dark:text-primary-400 font-medium hover:underline">
               Barchasini ko'rish <ChevronRight className="w-4 h-4" />
             </Link>
           </div>
@@ -232,7 +232,7 @@ export default function LandingPage() {
                       ))}
                     </div>
 
-                    <Link to="/login" className="flex items-center justify-center gap-2 w-full py-3 text-sm font-semibold text-surface-700 dark:text-white bg-white dark:bg-surface-800 border-2 border-surface-200 dark:border-surface-700 hover:border-primary-600 dark:hover:border-primary-500 hover:text-primary-600 dark:hover:text-primary-400 rounded-xl transition-all">
+                    <Link to="/dashboard" className="flex items-center justify-center gap-2 w-full py-3 text-sm font-semibold text-surface-700 dark:text-white bg-white dark:bg-surface-800 border-2 border-surface-200 dark:border-surface-700 hover:border-primary-600 dark:hover:border-primary-500 hover:text-primary-600 dark:hover:text-primary-400 rounded-xl transition-all">
                       {t('landing.analyze_btn', 'AI orqali tahlil qilish')} <ChevronRight className="w-4 h-4" />
                     </Link>
                   </div>
@@ -329,7 +329,7 @@ export default function LandingPage() {
                   Oyiga 3 ta bepul AI tahlil
                 </li>
               </ul>
-              <Link to="/login" className="w-full py-3 px-4 text-center text-primary-600 font-semibold bg-primary-50 dark:bg-primary-900/30 rounded-xl hover:bg-primary-100 transition-colors">
+              <Link to="/dashboard" className="w-full py-3 px-4 text-center text-primary-600 font-semibold bg-primary-50 dark:bg-primary-900/30 rounded-xl hover:bg-primary-100 transition-colors">
                 Boshlash
               </Link>
             </div>
@@ -359,7 +359,7 @@ export default function LandingPage() {
                   Red Flag va Yashirin xatarlar tahlili
                 </li>
               </ul>
-              <Link to="/login" className="w-full py-3 px-4 text-center text-primary-700 font-semibold bg-white rounded-xl hover:bg-surface-50 transition-colors shadow-md">
+              <Link to="/dashboard" className="w-full py-3 px-4 text-center text-primary-700 font-semibold bg-white rounded-xl hover:bg-surface-50 transition-colors shadow-md">
                 Pro'ni tanlash
               </Link>
             </div>
@@ -386,7 +386,7 @@ export default function LandingPage() {
                   Raqobatchilar razvedkasi va API ulanish
                 </li>
               </ul>
-              <Link to="/login" className="w-full py-3 px-4 text-center text-surface-700 dark:text-white font-semibold bg-surface-100 dark:bg-surface-800 rounded-xl hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors border border-surface-200 dark:border-surface-700">
+              <Link to="/dashboard" className="w-full py-3 px-4 text-center text-surface-700 dark:text-white font-semibold bg-surface-100 dark:bg-surface-800 rounded-xl hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors border border-surface-200 dark:border-surface-700">
                 Bog'lanish
               </Link>
             </div>
@@ -399,7 +399,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl font-bold text-white mb-6">Biznesingizni keyingi bosqichga olib chiqing</h2>
           <p className="text-surface-400 max-w-2xl mx-auto mb-10">Platformadan hoziroq bepul foydalanishni boshlang va tenderlarda ishtirok etish samaradorligini oshiring.</p>
-          <Link to="/login" className="inline-flex items-center justify-center px-8 py-4 text-base font-semibold text-surface-900 bg-white rounded-xl hover:bg-surface-50 transition-colors mb-16">
+          <Link to="/dashboard" className="inline-flex items-center justify-center px-8 py-4 text-base font-semibold text-surface-900 bg-white rounded-xl hover:bg-surface-50 transition-colors mb-16">
             Bepul Ro'yxatdan O'tish
           </Link>
           

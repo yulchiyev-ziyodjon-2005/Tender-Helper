@@ -202,6 +202,8 @@ CORS_ALLOW_HEADERS = [
     'x-requested-with',
 ]
 
+FRONTEND_BASE_URL = os.getenv('FRONTEND_BASE_URL', 'http://localhost:5173').rstrip('/')
+
 # ══════════════════════════════════════════════════════
 #  TENDERHELPER CUSTOM SETTINGS
 # ══════════════════════════════════════════════════════

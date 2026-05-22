@@ -5,7 +5,11 @@ Auth API: OTP yuborish/tasdiqlash, Google OAuth, profil.
 """
 
 import logging
+from urllib.parse import urlencode
 
+from django.conf import settings
+from django.core import signing
+from django.shortcuts import redirect
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -22,6 +26,11 @@ from .serializers import (
 )
 from .services.otp_service import generate_otp, verify_otp, send_otp_sms
 from .services.google_auth import verify_google_token
+from .services.google_oauth import (
+    build_google_authorization_url,
+    exchange_code_for_user_info,
+    is_google_oauth_configured,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +42,40 @@ def _get_tokens_for_user(user):
         'access': str(refresh.access_token),
         'refresh': str(refresh),
     }
+
+
+def _frontend_redirect(path, params=None):
+    url = f"{settings.FRONTEND_BASE_URL}{path}"
+    if params:
+        url = f"{url}?{urlencode(params)}"
+    return redirect(url)
+
+
+def _get_google_redirect_uri(request):
+    return request.build_absolute_uri('/api/v1/auth/google/callback/')
+
+
+def _get_or_create_google_user(google_user):
+    user, created = CustomUser.objects.get_or_create(
+        email=google_user['email'],
+        defaults={
+            'full_name': google_user.get('name', ''),
+            'auth_provider': 'google',
+            'is_active': True,
+        }
+    )
+
+    update_fields = []
+    if not user.full_name and google_user.get('name'):
+        user.full_name = google_user['name']
+        update_fields.append('full_name')
+    if user.auth_provider != 'google':
+        user.auth_provider = 'google'
+        update_fields.append('auth_provider')
+    if update_fields:
+        user.save(update_fields=update_fields)
+
+    return user, created
 
 
 # ══════════════════════════════════════════════════
@@ -162,20 +205,14 @@ def google_auth_view(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    # Foydalanuvchini topish yoki yaratish
-    user, created = CustomUser.objects.get_or_create(
-        email=google_user['email'],
-        defaults={
-            'full_name': google_user.get('name', ''),
-            'auth_provider': 'google',
-            'is_active': True,
-        }
-    )
+    user, created = _get_or_create_google_user(google_user)
 
     # Mavjud foydalanuvchi uchun — ismni yangilash (agar bo'sh bo'lsa)
-    if not created and not user.full_name and google_user.get('name'):
-        user.full_name = google_user['name']
-        user.save(update_fields=['full_name'])
+    if not user.is_active:
+        return Response(
+            {'error': 'inactive_user', 'message': 'Foydalanuvchi bloklangan'},
+            status=status.HTTP_403_FORBIDDEN,
+        )
 
     if created:
         logger.info(f"New user registered via Google: {google_user['email']}")
@@ -189,6 +226,89 @@ def google_auth_view(request):
         'user': profile,
         'is_new_user': created,
     }, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def google_oauth_config_view(request):
+    """
+    GET /api/v1/auth/google/config/
+    Frontend Google login holatini tekshirishi uchun.
+    """
+    enabled = is_google_oauth_configured()
+    return Response({
+        'enabled': enabled,
+        'start_url': '/api/v1/auth/google/start/',
+        'message': '' if enabled else 'Google OAuth sozlanmoqda',
+    })
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def google_oauth_start_view(request):
+    """
+    GET /api/v1/auth/google/start/
+    An'anaviy Google OAuth account chooser sahifasiga redirect qiladi.
+    """
+    if not is_google_oauth_configured():
+        return _frontend_redirect('/login', {
+            'google_error': "Google OAuth sozlanmagan. GOOGLE_CLIENT_ID va GOOGLE_CLIENT_SECRET ni kiriting.",
+        })
+
+    next_path = request.query_params.get('next') or '/dashboard'
+    state = signing.dumps({'next': next_path}, salt='google-oauth-state')
+    auth_url = build_google_authorization_url(_get_google_redirect_uri(request), state)
+    return redirect(auth_url)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def google_oauth_callback_view(request):
+    """
+    GET /api/v1/auth/google/callback/
+    Google authorization code'ni token/id_token'ga almashtirib JWT qaytaradi.
+    """
+    error = request.query_params.get('error')
+    if error:
+        return _frontend_redirect('/login', {'google_error': error})
+
+    code = request.query_params.get('code')
+    state = request.query_params.get('state')
+    if not code or not state:
+        return _frontend_redirect('/login', {'google_error': 'Google callback noto\'liq qaytdi'})
+
+    try:
+        state_data = signing.loads(state, salt='google-oauth-state', max_age=600)
+    except signing.BadSignature:
+        return _frontend_redirect('/login', {'google_error': 'Google sessiya muddati tugagan'})
+
+    try:
+        google_user = exchange_code_for_user_info(code, _get_google_redirect_uri(request))
+    except Exception as exc:
+        logger.exception('Google OAuth callback failed: %s', exc)
+        return _frontend_redirect('/login', {'google_error': 'Google orqali kirishda xatolik yuz berdi'})
+
+    if google_user is None:
+        return _frontend_redirect('/login', {'google_error': 'Google token noto\'g\'ri yoki email tasdiqlanmagan'})
+
+    user, created = _get_or_create_google_user(google_user)
+    if not user.is_active:
+        return _frontend_redirect('/login', {'google_error': 'Foydalanuvchi bloklangan'})
+
+    if created:
+        logger.info(f"New user registered via Google OAuth redirect: {google_user['email']}")
+
+    tokens = _get_tokens_for_user(user)
+    next_path = state_data.get('next') or '/dashboard'
+    if created:
+        next_path = '/onboarding'
+
+    return _frontend_redirect('/auth/google/callback', {
+        'access': tokens['access'],
+        'refresh': tokens['refresh'],
+        'is_new_user': '1' if created else '0',
+        'next': next_path,
+    })
 
 
 # ══════════════════════════════════════════════════

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
@@ -14,6 +14,7 @@ export default function LoginPage() {
   const [otpSentTo, setOtpSentTo] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [googleError] = useState(() => new URLSearchParams(window.location.search).get('google_error') || '');
 
   const normalizedPhone = `+998${phoneNumber.replace(/\D/g, '').slice(0, 9)}`;
   const canSubmit = phoneNumber.replace(/\D/g, '').length === 9;
@@ -22,6 +23,13 @@ export default function LoginPage() {
     setPhoneNumber(event.target.value.replace(/\D/g, '').slice(0, 9));
     setError('');
   };
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('google_error')) {
+      window.history.replaceState({}, '', '/login');
+    }
+  }, []);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -177,7 +185,13 @@ export default function LoginPage() {
                     </div>
                   </div>
 
-                  <GoogleLoginButton />
+                  <GoogleLoginButton disabled={isLoading} />
+
+                  {googleError && (
+                    <p className="text-sm text-danger-500 mt-4 bg-danger-50 dark:bg-danger-500/10 p-3 rounded-lg border border-danger-100 dark:border-danger-500/20">
+                      {googleError}
+                    </p>
+                  )}
 
                   <div className="mt-6 flex gap-3 rounded-lg bg-surface-50 dark:bg-surface-950 border border-surface-200 dark:border-surface-800 p-4">
                     <ShieldCheck className="w-5 h-5 text-success-500 flex-shrink-0 mt-0.5" />

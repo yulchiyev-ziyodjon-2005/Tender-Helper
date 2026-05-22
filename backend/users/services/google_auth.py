@@ -25,6 +25,10 @@ def verify_google_token(token):
         dict: Foydalanuvchi ma'lumotlari {'email', 'name', 'picture'}
         yoki None agar token noto'g'ri bo'lsa
     """
+    if not settings.GOOGLE_CLIENT_ID:
+        logger.error("Google OAuth client ID is not configured")
+        return None
+
     try:
         id_info = id_token.verify_oauth2_token(
             token,

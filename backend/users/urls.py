@@ -21,6 +21,9 @@ urlpatterns = [
 
     # Google OAuth
     path('google/', views.google_auth_view, name='google-auth'),
+    path('google/config/', views.google_oauth_config_view, name='google-config'),
+    path('google/start/', views.google_oauth_start_view, name='google-start'),
+    path('google/callback/', views.google_oauth_callback_view, name='google-callback'),
 
     # JWT Refresh
     path('refresh/', TokenRefreshView.as_view(), name='token-refresh'),

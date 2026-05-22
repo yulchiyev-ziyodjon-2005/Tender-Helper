@@ -13,21 +13,24 @@ import LoginPage from '../pages/LoginPage';
 import DashboardPage from '../pages/DashboardPage';
 import OnboardingPage from '../pages/OnboardingPage';
 import NotFoundPage from '../pages/NotFoundPage';
+import GoogleCallbackPage from '../pages/GoogleCallbackPage';
 
 /**
  * Himoyalangan yo'nalish — faqat autentifikatsiya qilingan foydalanuvchilar
  */
 function PrivateRoute({ children }) {
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  return isAuthenticated ? children : <Navigate to="/login" replace />;
+  return children; // Temporarily allow access without auth
+  // const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  // return isAuthenticated ? children : <Navigate to="/login" replace />;
 }
 
 /**
  * Ochiq yo'nalish — faqat autentifikatsiya qilinmaganlar
  */
 function PublicRoute({ children }) {
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  return !isAuthenticated ? children : <Navigate to="/dashboard" replace />;
+  return children; // Temporarily allow access without auth
+  // const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  // return !isAuthenticated ? children : <Navigate to="/dashboard" replace />;
 }
 
 export default function AppRouter() {
@@ -46,6 +49,8 @@ export default function AppRouter() {
             </PublicRoute>
           }
         />
+
+        <Route path="/auth/google/callback" element={<GoogleCallbackPage />} />
 
         {/* Private Routes */}
         <Route

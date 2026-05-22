@@ -8,8 +8,6 @@
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1';
 
 // ──────────── Auth ────────────
-export const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
-
 // ──────────── Subscription Limits ────────────
 export const TARIFF_LIMITS = {
   free: { analysis_per_month: 4, label: 'Bepul' },
