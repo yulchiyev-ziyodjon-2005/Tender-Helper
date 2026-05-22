@@ -35,7 +35,7 @@ export default function AITenderDashboard({ data }) {
     <div className="space-y-6">
       
       {/* Overview Card */}
-      <div className="bg-white dark:bg-surface-900 rounded-3xl p-6 sm:p-8 shadow-card border border-surface-200 dark:border-surface-800 flex flex-col md:flex-row items-center gap-8 relative overflow-hidden">
+      <div className="bg-white dark:bg-surface-900 rounded-2xl p-6 sm:p-8 shadow-card border border-surface-200 dark:border-surface-800 flex flex-col md:flex-row items-center gap-8 relative overflow-hidden">
         {/* Decorative background element */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-primary-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
         

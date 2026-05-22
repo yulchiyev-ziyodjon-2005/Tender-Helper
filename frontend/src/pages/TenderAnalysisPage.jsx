@@ -17,18 +17,17 @@ export default function TenderAnalysisPage() {
   const [error, setError] = useState(null);
   const [analysisData, setAnalysisData] = useState(null);
   const [tenderData, setTenderData] = useState(null);
-
-  useEffect(() => {
-    if (!lotId && !lotNumber && !freeQuery) {
-      navigate('/dashboard');
-      return;
-    }
-    runAnalysis();
-  }, [lotId, lotNumber, freeQuery]);
+  const [loadingStep, setLoadingStep] = useState(0);
 
   const runAnalysis = async () => {
     setIsLoading(true);
     setError(null);
+    setLoadingStep(0);
+    
+    // Simulate progress steps
+    const progressInterval = setInterval(() => {
+      setLoadingStep(prev => prev < 3 ? prev + 1 : prev);
+    }, 2500);
     
     try {
       let tender = null;
@@ -48,6 +47,7 @@ export default function TenderAnalysisPage() {
         
         if (results.length === 0) {
           setError(`"${searchTerm}" bo'yicha tender topilmadi. Avval bazaga tender qo'shing.`);
+          clearInterval(progressInterval);
           setIsLoading(false);
           return;
         }
@@ -59,20 +59,31 @@ export default function TenderAnalysisPage() {
       // Step 2: Run AI Analysis via backend
       setAnalysisPhase('AI hujjatlarni tahlil qilmoqda...');
       const { data: analysis } = await apiClient.post('/analysis/start/', {
-        lot_id: tender.id,
+        tender_id: tender.id
       });
-      
+
       setAnalysisData(analysis);
+      setLoadingStep(4);
     } catch (err) {
       console.error('Analysis error:', err);
       const msg = err.response?.data?.message || err.response?.data?.error || err.message;
       setError(`Tahlil jarayonida xatolik: ${msg}`);
     } finally {
+      clearInterval(progressInterval);
       setIsLoading(false);
     }
   };
 
+  useEffect(() => {
+    if (!lotId && !lotNumber && !freeQuery) {
+      navigate('/dashboard');
+      return;
+    }
+    runAnalysis();
+  }, [lotId, lotNumber, freeQuery]);
+
   if (isLoading) {
+    const steps = ['Qidiruv', 'Hujjatlar', 'Red Flags', 'Xulosa'];
     return (
       <div className="min-h-screen bg-surface-50 dark:bg-surface-950 flex flex-col items-center justify-center p-4">
         <div className="relative mb-6">
@@ -80,14 +91,18 @@ export default function TenderAnalysisPage() {
           <Loader2 className="w-20 h-20 text-primary-500 animate-spin absolute top-0 left-0" />
         </div>
         <h2 className="text-xl font-bold text-surface-900 dark:text-white mb-2">AI tahlil jarayoni</h2>
-        <p className="text-surface-500 text-center max-w-md">{analysisPhase}</p>
-        <div className="mt-6 flex gap-2">
-          {['Hujjatlar', 'Talablar', 'Red Flags', 'Xulosa'].map((step, i) => (
-            <div key={step} className="flex items-center gap-2">
-              <div className={`w-2.5 h-2.5 rounded-full ${i === 0 ? 'bg-primary-500 animate-pulse' : 'bg-surface-300 dark:bg-surface-700'}`}></div>
-              <span className={`text-xs ${i === 0 ? 'text-primary-600 font-medium' : 'text-surface-400'}`}>{step}</span>
-            </div>
-          ))}
+        <p className="text-surface-500 text-center max-w-md h-6">{analysisPhase}</p>
+        <div className="mt-8 flex gap-4">
+          {steps.map((step, i) => {
+            const isActive = i === loadingStep;
+            const isDone = i < loadingStep;
+            return (
+              <div key={step} className="flex flex-col items-center gap-2">
+                <div className={`w-3 h-3 rounded-full transition-colors duration-500 ${isActive ? 'bg-primary-500 shadow-[0_0_10px_rgba(59,130,246,0.6)] animate-pulse' : isDone ? 'bg-success-500' : 'bg-surface-300 dark:bg-surface-700'}`}></div>
+                <span className={`text-xs transition-colors duration-500 ${isActive ? 'text-primary-600 font-bold' : isDone ? 'text-success-600 font-medium' : 'text-surface-400'}`}>{step}</span>
+              </div>
+            );
+          })}
         </div>
       </div>
     );
