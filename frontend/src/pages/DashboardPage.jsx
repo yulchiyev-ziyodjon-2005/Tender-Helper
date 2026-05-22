@@ -5,7 +5,7 @@
  * To'liq implementatsiya BOSQICH 4 da.
  */
 
-import { Shield, Search, BarChart3, Calculator, Users, Settings, LogOut } from 'lucide-react';
+import { Shield, Search, BarChart3, Calculator, LogOut } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 
 export default function DashboardPage() {

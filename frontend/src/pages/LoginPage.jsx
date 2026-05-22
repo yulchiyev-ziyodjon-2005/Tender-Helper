@@ -2,54 +2,49 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import { ArrowLeft, Phone, ShieldCheck } from 'lucide-react';
 import GoogleLoginButton from '../components/auth/GoogleLoginButton';
+import OTPVerification from '../components/auth/OTPVerification';
 import LanguageSwitcher from '../components/ui/LanguageSwitcher';
 import ThemeToggle from '../components/ui/ThemeToggle';
 
 export default function LoginPage() {
   const { t } = useTranslation();
-  const [isLogin, setIsLogin] = useState(true); // Toggle between Login and Register
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    full_name: '',
-  });
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [otpSentTo, setOtpSentTo] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const normalizedPhone = `+998${phoneNumber.replace(/\D/g, '').slice(0, 9)}`;
+  const canSubmit = phoneNumber.replace(/\D/g, '').length === 9;
+
+  const handlePhoneChange = (event) => {
+    setPhoneNumber(event.target.value.replace(/\D/g, '').slice(0, 9));
     setError('');
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    if (!canSubmit) {
+      setError(t('errors.invalid_phone'));
+      return;
+    }
+
     setIsLoading(true);
     setError('');
 
-    const endpoint = isLogin ? '/api/v1/auth/login/' : '/api/v1/auth/register/';
-    
     try {
-      const res = await fetch(endpoint, {
+      const response = await fetch('/api/v1/auth/send-otp/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ phone_number: normalizedPhone }),
       });
+      const data = await response.json();
 
-      const data = await res.json();
-
-      if (res.ok) {
-        localStorage.setItem('access_token', data.tokens.access);
-        localStorage.setItem('refresh_token', data.tokens.refresh);
-        
-        // Agar yangi user bo'lsa Onboardingga, yo'qsa Dashboardga
-        window.location.href = data.is_new_user ? '/onboarding' : '/dashboard';
+      if (response.ok) {
+        setOtpSentTo(data.phone_number || normalizedPhone);
       } else {
-        // Handle validation errors from serializer
-        let errorMsg = data.message || t('messages.error_occurred');
-        if (data.email) errorMsg = data.email[0];
-        if (data.password) errorMsg = data.password[0];
-        setError(errorMsg);
+        setError(data.message || t('messages.error_occurred'));
       }
     } catch {
       setError(t('messages.network_error'));
@@ -60,10 +55,10 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-surface-50 dark:bg-surface-950 transition-colors duration-300">
-      {/* Top bar */}
       <div className="flex justify-between items-center p-4">
         <Link to="/" className="text-surface-500 hover:text-surface-900 dark:hover:text-white flex items-center gap-2 text-sm font-medium transition-colors">
-          ← Asosiy sahifaga qaytish
+          <ArrowLeft className="w-4 h-4" />
+          Asosiy sahifaga qaytish
         </Link>
         <div className="flex items-center gap-2">
           <ThemeToggle />
@@ -71,10 +66,8 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Main content */}
       <div className="flex-1 flex items-center justify-center px-4 pb-8">
         <div className="w-full max-w-md">
-          {/* Logo */}
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -82,9 +75,9 @@ export default function LoginPage() {
             className="text-center mb-8 flex flex-col items-center"
           >
             <div className="w-24 h-24 mb-4 flex items-center justify-center">
-              <img 
-                src="/logo/logo-cropped.png" 
-                alt="TenderHelper Logo" 
+              <img
+                src="/logo/logo-cropped.png"
+                alt="TenderHelper Logo"
                 className="w-full h-full object-contain drop-shadow-md"
               />
             </div>
@@ -96,125 +89,105 @@ export default function LoginPage() {
             </p>
           </motion.div>
 
-          {/* Card */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
             className="bg-white dark:bg-surface-900 rounded-2xl shadow-card border border-surface-200 dark:border-surface-800 overflow-hidden"
           >
-            <div className="p-8">
-              {/* Tabs */}
-              <div className="flex bg-surface-100 dark:bg-surface-800 rounded-lg p-1 mb-6">
-                <button
-                  onClick={() => { setIsLogin(true); setError(''); }}
-                  className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${isLogin ? 'bg-white dark:bg-surface-700 text-surface-900 dark:text-white shadow-sm' : 'text-surface-500 hover:text-surface-700 dark:hover:text-surface-300'}`}
-                >
-                  Kirish
-                </button>
-                <button
-                  onClick={() => { setIsLogin(false); setError(''); }}
-                  className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${!isLogin ? 'bg-white dark:bg-surface-700 text-surface-900 dark:text-white shadow-sm' : 'text-surface-500 hover:text-surface-700 dark:hover:text-surface-300'}`}
-                >
-                  Ro'yxatdan o'tish
-                </button>
-              </div>
-
-              <AnimatePresence mode="wait">
-                <motion.form
-                  key={isLogin ? 'login' : 'register'}
-                  initial={{ opacity: 0, x: isLogin ? -10 : 10 }}
+            <AnimatePresence mode="wait">
+              {otpSentTo ? (
+                <motion.div
+                  key="otp"
+                  initial={{ opacity: 0, x: 16 }}
                   animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: isLogin ? 10 : -10 }}
+                  exit={{ opacity: 0, x: -16 }}
                   transition={{ duration: 0.2 }}
-                  onSubmit={handleSubmit}
                 >
-                  {!isLogin && (
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">
-                        Ismingiz (Kompaniya)
-                      </label>
+                  <OTPVerification
+                    phoneNumber={otpSentTo}
+                    onBack={() => {
+                      setOtpSentTo('');
+                      setError('');
+                    }}
+                  />
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="phone"
+                  initial={{ opacity: 0, x: -16 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 16 }}
+                  transition={{ duration: 0.2 }}
+                  className="p-8"
+                >
+                  <div className="mb-6">
+                    <div className="w-12 h-12 rounded-xl bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center mb-4">
+                      <Phone className="w-6 h-6 text-primary-600 dark:text-primary-400" />
+                    </div>
+                    <h2 className="text-xl font-semibold text-surface-900 dark:text-white">
+                      {t('auth.login_title')}
+                    </h2>
+                    <p className="text-sm text-surface-500 mt-1">
+                      Telefon raqamingizga bir martalik SMS kod yuboramiz.
+                    </p>
+                  </div>
+
+                  <form onSubmit={handleSubmit}>
+                    <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">
+                      {t('auth.phone_label')}
+                    </label>
+                    <div className="flex rounded-lg border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 focus-within:ring-2 focus-within:ring-primary-500 transition-all">
+                      <span className="px-4 py-3 text-surface-500 border-r border-surface-200 dark:border-surface-700 select-none">
+                        +998
+                      </span>
                       <input
-                        type="text"
-                        name="full_name"
-                        value={formData.full_name}
-                        onChange={handleChange}
-                        required
-                        placeholder="Ismingizni kiriting"
-                        className="w-full px-4 py-3 bg-surface-50 dark:bg-surface-800 border border-surface-200 dark:border-surface-700 rounded-lg text-surface-900 dark:text-white placeholder-surface-400 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all"
+                        type="tel"
+                        inputMode="numeric"
+                        value={phoneNumber}
+                        onChange={handlePhoneChange}
+                        placeholder={t('auth.phone_placeholder')}
+                        className="min-w-0 flex-1 px-4 py-3 bg-transparent text-surface-900 dark:text-white placeholder-surface-400 focus:outline-none"
                       />
                     </div>
-                  )}
 
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">
-                      Email
-                    </label>
-                    <input
-                      type="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleChange}
-                      required
-                      placeholder="name@company.uz"
-                      className="w-full px-4 py-3 bg-surface-50 dark:bg-surface-800 border border-surface-200 dark:border-surface-700 rounded-lg text-surface-900 dark:text-white placeholder-surface-400 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all"
-                    />
-                  </div>
-
-                  <div className="mb-6">
-                    <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">
-                      Parol
-                    </label>
-                    <input
-                      type="password"
-                      name="password"
-                      value={formData.password}
-                      onChange={handleChange}
-                      required
-                      minLength={8}
-                      placeholder="••••••••"
-                      className="w-full px-4 py-3 bg-surface-50 dark:bg-surface-800 border border-surface-200 dark:border-surface-700 rounded-lg text-surface-900 dark:text-white placeholder-surface-400 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all"
-                    />
-                  </div>
-
-                  {error && (
-                    <p className="text-sm text-danger-500 mb-4 bg-danger-50 dark:bg-danger-500/10 p-3 rounded-lg border border-danger-100 dark:border-danger-500/20">
-                      {error}
-                    </p>
-                  )}
-
-                  <button
-                    type="submit"
-                    disabled={isLoading}
-                    className="w-full py-3 px-4 bg-primary-600 hover:bg-primary-700 active:bg-primary-800 disabled:opacity-50 text-white font-medium rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-surface-900 flex justify-center items-center"
-                  >
-                    {isLoading ? (
-                      <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                      </svg>
-                    ) : (
-                      isLogin ? "Tizimga kirish" : "Ro'yxatdan o'tish"
+                    {error && (
+                      <p className="text-sm text-danger-500 mt-4 bg-danger-50 dark:bg-danger-500/10 p-3 rounded-lg border border-danger-100 dark:border-danger-500/20">
+                        {error}
+                      </p>
                     )}
-                  </button>
-                </motion.form>
-              </AnimatePresence>
 
-              <div className="relative my-6">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-surface-200 dark:border-surface-700"></div>
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-3 bg-white dark:bg-surface-900 text-surface-400">yoki</span>
-                </div>
-              </div>
+                    <button
+                      type="submit"
+                      disabled={!canSubmit || isLoading}
+                      className="w-full mt-6 py-3 px-4 bg-primary-600 hover:bg-primary-700 active:bg-primary-800 disabled:opacity-50 text-white font-medium rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-surface-900 flex justify-center items-center"
+                    >
+                      {isLoading ? t('actions.loading') : t('auth.send_otp')}
+                    </button>
+                  </form>
 
-              <GoogleLoginButton />
+                  <div className="relative my-6">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-surface-200 dark:border-surface-700" />
+                    </div>
+                    <div className="relative flex justify-center text-sm">
+                      <span className="px-3 bg-white dark:bg-surface-900 text-surface-400">
+                        {t('auth.or')}
+                      </span>
+                    </div>
+                  </div>
 
-              <p className="text-xs text-surface-400 text-center mt-6">
-                Davom etish orqali siz TenderHelper'ning Maxfiylik Siyosati va Foydalanish Shartlariga rozilik bildirasiz.
-              </p>
-            </div>
+                  <GoogleLoginButton />
+
+                  <div className="mt-6 flex gap-3 rounded-lg bg-surface-50 dark:bg-surface-950 border border-surface-200 dark:border-surface-800 p-4">
+                    <ShieldCheck className="w-5 h-5 text-success-500 flex-shrink-0 mt-0.5" />
+                    <p className="text-xs text-surface-500">
+                      Kirish orqali siz TenderHelper foydalanish shartlari va maxfiylik siyosatiga rozilik bildirasiz.
+                    </p>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
         </div>
       </div>

@@ -72,6 +72,7 @@ class CustomUser(AbstractUser):
     class AuthProvider(models.TextChoices):
         PHONE = 'phone', 'Telefon + OTP'
         GOOGLE = 'google', 'Google OAuth'
+        EMAIL = 'email', 'Email + Parol'
 
     # AbstractUser dan username ni olib tashlaymiz
     username = None

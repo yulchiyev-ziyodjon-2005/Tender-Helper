@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Building2, Briefcase, Tag, Phone, ShieldCheck, ChevronRight, ChevronLeft } from 'lucide-react';
-import OTPVerification from '../components/auth/OTPVerification';
+import { Building2, Briefcase, Tag, ShieldCheck, ChevronRight, ChevronLeft, CheckCircle2 } from 'lucide-react';
 
 export default function OnboardingPage() {
   const navigate = useNavigate();

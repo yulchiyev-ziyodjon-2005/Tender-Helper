@@ -1,9 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import useAuthStore from '../../store/authStore';
 
 export default function OTPVerification({ phoneNumber, onBack }) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const login = useAuthStore((state) => state.login);
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -86,13 +90,8 @@ export default function OTPVerification({ phoneNumber, onBack }) {
       const data = await res.json();
 
       if (res.ok) {
-        // Tokenlarni saqlash
-        localStorage.setItem('access_token', data.tokens.access);
-        localStorage.setItem('refresh_token', data.tokens.refresh);
-        
-        // TODO: Update global auth store state
-        // TODO: Redirect user (to onboarding or dashboard)
-        window.location.href = data.is_new_user ? '/onboarding' : '/dashboard';
+        login(data.tokens, data.user);
+        navigate(data.is_new_user ? '/onboarding' : '/dashboard', { replace: true });
       } else {
         setError(data.message || t('errors.invalid_otp'));
         setOtp(['', '', '', '', '', '']); // Xato bo'lsa tozalash

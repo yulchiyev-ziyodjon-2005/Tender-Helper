@@ -6,15 +6,14 @@ import { useTranslation } from 'react-i18next';
 import ThemeToggle from '../components/ui/ThemeToggle';
 import LanguageSwitcher from '../components/ui/LanguageSwitcher';
 
+const heroImages = [
+  "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1920&q=80",
+  "https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=1920&q=80",
+  "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1920&q=80"
+];
+
 export default function LandingPage() {
   const { t } = useTranslation();
-
-  // Hero Slider Images
-  const heroImages = [
-    "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1920&q=80",
-    "https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=1920&q=80",
-    "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1920&q=80"
-  ];
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
@@ -295,6 +294,101 @@ export default function LandingPage() {
               <p className="text-surface-600 dark:text-surface-400 text-sm leading-relaxed">
                 Xarid portalidagi boshqa ishtirokchilar tarixi va g'alaba ko'rsatkichlari bazasi.
               </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ──────────────── PRICING SECTION ──────────────── */}
+      <section id="pricing" className="py-24 bg-surface-100 dark:bg-surface-950/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-surface-900 dark:text-white mb-6">
+              Investitsiya qiling, jarimalardan saqlaning
+            </h2>
+            <p className="text-lg text-surface-600 dark:text-surface-400">
+              Qulay narxlardagi AI yordamchingiz xatolar tufayli millionlab so'm ziyon ko'rishingizni oldini oladi.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Freemium */}
+            <div className="bg-white dark:bg-surface-900 rounded-2xl p-8 border border-surface-200 dark:border-surface-800 flex flex-col">
+              <h3 className="text-xl font-bold text-surface-900 dark:text-white mb-2">Bepul</h3>
+              <p className="text-surface-500 text-sm mb-6">Tizim bilan tanishish uchun</p>
+              <div className="text-4xl font-extrabold text-surface-900 dark:text-white mb-6">
+                0 <span className="text-lg font-medium text-surface-500">UZS</span>
+              </div>
+              <ul className="space-y-4 mb-8 flex-1">
+                <li className="flex items-center gap-3 text-surface-600 dark:text-surface-300">
+                  <CheckCircle2 className="w-5 h-5 text-success-500 flex-shrink-0" />
+                  Barcha ochiq tenderlarni ko'rish
+                </li>
+                <li className="flex items-center gap-3 text-surface-600 dark:text-surface-300">
+                  <CheckCircle2 className="w-5 h-5 text-success-500 flex-shrink-0" />
+                  Oyiga 3 ta bepul AI tahlil
+                </li>
+              </ul>
+              <Link to="/login" className="w-full py-3 px-4 text-center text-primary-600 font-semibold bg-primary-50 dark:bg-primary-900/30 rounded-xl hover:bg-primary-100 transition-colors">
+                Boshlash
+              </Link>
+            </div>
+
+            {/* Pro */}
+            <div className="bg-primary-600 rounded-2xl p-8 border border-primary-500 flex flex-col relative transform md:-translate-y-4 shadow-xl shadow-primary-600/20">
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-xs font-bold px-4 py-1 rounded-full uppercase tracking-wide">
+                Eng ommabop
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2">Pro / Tadbirkor</h3>
+              <p className="text-primary-100 text-sm mb-6">O'rta va kichik bizneslar uchun</p>
+              <div className="text-4xl font-extrabold text-white mb-2 whitespace-nowrap">
+                299,000 <span className="text-lg font-medium text-primary-200">UZS / oy</span>
+              </div>
+              <p className="text-primary-200 text-xs mb-6">Yillik to'lovda: 2.99M so'm (2 oy bepul)</p>
+              <ul className="space-y-4 mb-8 flex-1">
+                <li className="flex items-center gap-3 text-white">
+                  <CheckCircle2 className="w-5 h-5 text-primary-200 flex-shrink-0" />
+                  Oyiga 100 tagacha AI tahlillar
+                </li>
+                <li className="flex items-center gap-3 text-white">
+                  <CheckCircle2 className="w-5 h-5 text-primary-200 flex-shrink-0" />
+                  To'liq Smart Kalkulyator (Stop-loss)
+                </li>
+                <li className="flex items-center gap-3 text-white">
+                  <CheckCircle2 className="w-5 h-5 text-primary-200 flex-shrink-0" />
+                  Red Flag va Yashirin xatarlar tahlili
+                </li>
+              </ul>
+              <Link to="/login" className="w-full py-3 px-4 text-center text-primary-700 font-semibold bg-white rounded-xl hover:bg-surface-50 transition-colors shadow-md">
+                Pro'ni tanlash
+              </Link>
+            </div>
+
+            {/* Enterprise */}
+            <div className="bg-white dark:bg-surface-900 rounded-2xl p-8 border border-surface-200 dark:border-surface-800 flex flex-col">
+              <h3 className="text-xl font-bold text-surface-900 dark:text-white mb-2">Enterprise</h3>
+              <p className="text-surface-500 text-sm mb-6">Yirik korxonalar va konsalting uchun</p>
+              <div className="text-4xl font-extrabold text-surface-900 dark:text-white mb-2 whitespace-nowrap">
+                14.9M <span className="text-lg font-medium text-surface-500">UZS / yil</span>
+              </div>
+              <p className="text-surface-400 text-xs mb-6">Faqat yillik to'lov</p>
+              <ul className="space-y-4 mb-8 flex-1">
+                <li className="flex items-center gap-3 text-surface-600 dark:text-surface-300">
+                  <CheckCircle2 className="w-5 h-5 text-success-500 flex-shrink-0" />
+                  Cheksiz AI tahlillar (Limit yo'q)
+                </li>
+                <li className="flex items-center gap-3 text-surface-600 dark:text-surface-300">
+                  <CheckCircle2 className="w-5 h-5 text-success-500 flex-shrink-0" />
+                  Jamoaviy boshqaruv (5 ta foydalanuvchi)
+                </li>
+                <li className="flex items-center gap-3 text-surface-600 dark:text-surface-300">
+                  <CheckCircle2 className="w-5 h-5 text-success-500 flex-shrink-0" />
+                  Raqobatchilar razvedkasi va API ulanish
+                </li>
+              </ul>
+              <Link to="/login" className="w-full py-3 px-4 text-center text-surface-700 dark:text-white font-semibold bg-surface-100 dark:bg-surface-800 rounded-xl hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors border border-surface-200 dark:border-surface-700">
+                Bog'lanish
+              </Link>
             </div>
           </div>
         </div>
