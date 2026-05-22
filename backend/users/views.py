@@ -101,14 +101,28 @@ def verify_otp_view(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    # Foydalanuvchini topish yoki yaratish
-    user, created = CustomUser.objects.get_or_create(
-        phone_number=phone_number,
-        defaults={
-            'auth_provider': 'phone',
-            'is_active': True,
-        }
-    )
+    # Foydalanuvchini topish yoki yaratish (yoki ulash)
+    user_req = getattr(request, 'user', None)
+    
+    if user_req and user_req.is_authenticated:
+        if CustomUser.objects.filter(phone_number=phone_number).exclude(id=user_req.id).exists():
+            return Response(
+                {'error': 'phone_used', 'message': 'Bu raqam allaqachon boshqa profilga ulangan'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        user = user_req
+        user.phone_number = phone_number
+        user.save(update_fields=['phone_number'])
+        created = False
+        logger.info(f"User {user.email} linked phone: {phone_number}")
+    else:
+        user, created = CustomUser.objects.get_or_create(
+            phone_number=phone_number,
+            defaults={
+                'auth_provider': 'phone',
+                'is_active': True,
+            }
+        )
 
     if created:
         logger.info(f"New user registered via OTP: {phone_number}")
@@ -174,6 +188,71 @@ def google_auth_view(request):
         'tokens': tokens,
         'user': profile,
         'is_new_user': created,
+    }, status=status.HTTP_200_OK)
+
+
+# ══════════════════════════════════════════════════
+#  Email Authentication
+# ══════════════════════════════════════════════════
+
+from django.contrib.auth import authenticate
+from .serializers import EmailRegisterSerializer, EmailLoginSerializer
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def email_register_view(request):
+    """
+    POST /api/v1/auth/register/
+    Email orqali ro'yxatdan o'tish.
+    """
+    serializer = EmailRegisterSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    user = serializer.save()
+    
+    logger.info(f"New user registered via Email: {user.email}")
+    
+    tokens = _get_tokens_for_user(user)
+    profile = UserProfileSerializer(user).data
+    
+    return Response({
+        'tokens': tokens,
+        'user': profile,
+        'is_new_user': True,
+    }, status=status.HTTP_201_CREATED)
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def email_login_view(request):
+    """
+    POST /api/v1/auth/login/
+    Email va parol orqali kirish.
+    """
+    serializer = EmailLoginSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    
+    email = serializer.validated_data['email']
+    password = serializer.validated_data['password']
+    
+    # Authenticate (uses phone or email depending on backend, but we need email auth)
+    # By default, Django's authenticate uses the USERNAME_FIELD. 
+    # Let's handle it manually if custom auth backend is not fully setup for email.
+    try:
+        user = CustomUser.objects.get(email=email)
+        if not user.check_password(password):
+            return Response({'error': 'invalid_credentials', 'message': 'Email yoki parol noto\'g\'ri'}, status=status.HTTP_400_BAD_REQUEST)
+    except CustomUser.DoesNotExist:
+        return Response({'error': 'invalid_credentials', 'message': 'Email yoki parol noto\'g\'ri'}, status=status.HTTP_400_BAD_REQUEST)
+
+    if not user.is_active:
+        return Response({'error': 'inactive_user', 'message': 'Foydalanuvchi bloklangan'}, status=status.HTTP_403_FORBIDDEN)
+        
+    tokens = _get_tokens_for_user(user)
+    profile = UserProfileSerializer(user).data
+    
+    return Response({
+        'tokens': tokens,
+        'user': profile,
+        'is_new_user': False,
     }, status=status.HTTP_200_OK)
 
 

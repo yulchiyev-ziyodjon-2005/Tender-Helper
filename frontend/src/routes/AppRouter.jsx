@@ -8,8 +8,10 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 
 // Pages (placeholder - to'liq sahifalar 2-bosqichdan boshlab yaratiladi)
+import LandingPage from '../pages/LandingPage';
 import LoginPage from '../pages/LoginPage';
 import DashboardPage from '../pages/DashboardPage';
+import OnboardingPage from '../pages/OnboardingPage';
 import NotFoundPage from '../pages/NotFoundPage';
 
 /**
@@ -32,6 +34,9 @@ export default function AppRouter() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Landing Page - Har doim ochiq, lekin auth bo'lsa dashboardga yo'naltirish ixtiyoriy. Hozircha hamma uchun ochiq. */}
+        <Route path="/" element={<LandingPage />} />
+
         {/* Public Routes */}
         <Route
           path="/login"
@@ -51,9 +56,15 @@ export default function AppRouter() {
             </PrivateRoute>
           }
         />
-
-        {/* Redirects */}
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        
+        <Route
+          path="/onboarding"
+          element={
+            <PrivateRoute>
+              <OnboardingPage />
+            </PrivateRoute>
+          }
+        />
 
         {/* 404 */}
         <Route path="*" element={<NotFoundPage />} />

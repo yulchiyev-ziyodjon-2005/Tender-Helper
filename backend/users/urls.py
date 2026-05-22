@@ -11,6 +11,10 @@ from . import views
 app_name = 'users'
 
 urlpatterns = [
+    # Email Authentication
+    path('register/', views.email_register_view, name='email-register'),
+    path('login/', views.email_login_view, name='email-login'),
+
     # OTP Authentication
     path('send-otp/', views.send_otp_view, name='send-otp'),
     path('verify-otp/', views.verify_otp_view, name='verify-otp'),

@@ -16,7 +16,6 @@ class SendOTPSerializer(serializers.Serializer):
     )
 
     def validate_phone_number(self, value):
-        """Telefon raqami validatsiyasi."""
         cleaned = value.replace('+', '').replace(' ', '').replace('-', '')
         if not cleaned.startswith('998') or len(cleaned) != 12:
             raise serializers.ValidationError(
@@ -51,6 +50,39 @@ class GoogleAuthSerializer(serializers.Serializer):
     )
 
 
+class EmailRegisterSerializer(serializers.ModelSerializer):
+    """Email orqali ro'yxatdan o'tish."""
+    password = serializers.CharField(write_only=True, min_length=8)
+
+    class Meta:
+        model = CustomUser
+        fields = ['email', 'password', 'full_name']
+        extra_kwargs = {
+            'email': {'required': True, 'allow_blank': False},
+            'full_name': {'required': True, 'allow_blank': False}
+        }
+
+    def validate_email(self, value):
+        if CustomUser.objects.filter(email=value).exists():
+            raise serializers.ValidationError("Bu email allaqachon ro'yxatdan o'tgan")
+        return value
+
+    def create(self, validated_data):
+        user = CustomUser.objects.create_user(
+            email=validated_data['email'],
+            password=validated_data['password'],
+            full_name=validated_data['full_name'],
+            auth_provider='email'
+        )
+        return user
+
+
+class EmailLoginSerializer(serializers.Serializer):
+    """Email va parol orqali kirish."""
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True)
+
+
 class UserProfileSerializer(serializers.ModelSerializer):
     """Foydalanuvchi profili — o'qish uchun."""
     display_name = serializers.ReadOnlyField()
@@ -79,7 +111,7 @@ class UserUpdateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CustomUser
-        fields = ['full_name', 'email']
+        fields = ['full_name', 'email', 'phone_number']
 
     def validate_email(self, value):
         user = self.context.get('request').user
