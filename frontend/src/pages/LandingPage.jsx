@@ -2,10 +2,13 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Shield, Search, BrainCircuit, CheckCircle2, ChevronRight, BarChart3, Clock, MapPin } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import ThemeToggle from '../components/ui/ThemeToggle';
 import LanguageSwitcher from '../components/ui/LanguageSwitcher';
 
 export default function LandingPage() {
+  const { t } = useTranslation();
+
   // Hero Slider Images
   const heroImages = [
     "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1920&q=80",
@@ -32,7 +35,7 @@ export default function LandingPage() {
       deadline: "2026-06-01",
       platform: "xarid.uzex.uz",
       tags: ["IT", "Uskunalar"],
-      image: "https://images.unsplash.com/photo-1542393545-10f5cde2c810?auto=format&fit=crop&w=600&q=80"
+      image: "https://images.unsplash.com/photo-1611186871348-b1ce696e52c9?auto=format&fit=crop&w=600&q=80"
     },
     {
       id: "24110085",
@@ -42,7 +45,7 @@ export default function LandingPage() {
       deadline: "2026-05-28",
       platform: "exarid.uzex.uz",
       tags: ["Mebel", "Korporativ"],
-      image: "https://images.unsplash.com/photo-1505843490538-5133c6c7d0e1?auto=format&fit=crop&w=600&q=80"
+      image: "https://images.unsplash.com/photo-1580480055273-228ff5388ef8?auto=format&fit=crop&w=600&q=80"
     },
     {
       id: "24110103",
@@ -62,12 +65,10 @@ export default function LandingPage() {
       {/* ──────────────── NAVBAR ──────────────── */}
       <nav className="sticky top-0 z-50 bg-white/80 dark:bg-surface-900/80 backdrop-blur-md border-b border-surface-200 dark:border-surface-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-20">
+          <div className="flex justify-between items-center h-16">
             {/* Logo */}
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 flex items-center justify-center">
-                <img src="/logo/logo-cropped.png" alt="Logo" className="w-full h-full object-contain" />
-              </div>
+              <img src="/logo/logo-cropped.png" alt="Logo" className="h-10 w-auto object-contain" />
               <span className="text-xl font-bold text-surface-900 dark:text-white hidden sm:block">
                 TenderHelper
               </span>
@@ -75,8 +76,12 @@ export default function LandingPage() {
 
             {/* Desktop Menu */}
             <div className="hidden md:flex items-center gap-8">
-              <a href="#features" className="text-sm font-medium text-surface-600 hover:text-primary-600 dark:text-surface-300 dark:hover:text-primary-400 transition-colors">Imkoniyatlar</a>
-              <a href="#tenders" className="text-sm font-medium text-surface-600 hover:text-primary-600 dark:text-surface-300 dark:hover:text-primary-400 transition-colors">Ochiq Tenderlar</a>
+              <a href="#features" className="text-sm font-medium text-surface-600 hover:text-primary-600 dark:text-surface-300 dark:hover:text-primary-400 transition-colors">
+                {t('landing.features', 'Imkoniyatlar')}
+              </a>
+              <a href="#tenders" className="text-sm font-medium text-surface-600 hover:text-primary-600 dark:text-surface-300 dark:hover:text-primary-400 transition-colors">
+                {t('landing.open_tenders', 'Ochiq Tenderlar')}
+              </a>
             </div>
 
             {/* Auth & Toggles */}
@@ -98,21 +103,21 @@ export default function LandingPage() {
       {/* ──────────────── HERO SECTION ──────────────── */}
       <section className="relative overflow-hidden pt-24 pb-32 min-h-[600px] flex items-center">
         {/* Background Slider */}
-        <div className="absolute inset-0 z-0">
+        <div className="absolute inset-0 z-0 bg-surface-900 dark:bg-black">
           <AnimatePresence mode="wait">
             <motion.img
               key={currentImageIndex}
               src={heroImages[currentImageIndex]}
               initial={{ opacity: 0, scale: 1.05 }}
-              animate={{ opacity: 0.3, scale: 1 }}
+              animate={{ opacity: 0.6, scale: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 1.5 }}
-              className="absolute inset-0 w-full h-full object-cover dark:opacity-20"
+              className="absolute inset-0 w-full h-full object-cover dark:opacity-40"
               alt="Hero Background"
             />
           </AnimatePresence>
           {/* Gradient Overlay for Readability */}
-          <div className="absolute inset-0 bg-gradient-to-b from-surface-50/70 via-surface-50/90 to-surface-50 dark:from-surface-950/70 dark:via-surface-950/90 dark:to-surface-950"></div>
+          <div className="absolute inset-0 bg-gradient-to-b from-surface-50/50 via-surface-50/70 to-surface-50 dark:from-surface-950/50 dark:via-surface-950/70 dark:to-surface-950"></div>
         </div>
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -122,20 +127,20 @@ export default function LandingPage() {
             transition={{ duration: 0.5 }}
           >
             <h1 className="text-5xl md:text-7xl font-extrabold text-surface-900 dark:text-white tracking-tight mb-8">
-              Tenderlarda <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-600 to-success-500">AI Mentor</span> orqali yutish ehtimolini oshiring
+              {t('landing.hero_title', 'Tenderlarda AI Mentor orqali yutish ehtimolini oshiring')}
             </h1>
             
-            <p className="max-w-2xl mx-auto text-lg md:text-xl text-surface-600 dark:text-surface-400 mb-10 leading-relaxed">
-              Davlat va korporativ xaridlarda hujjatlarni AI yordamida tahlil qiling. Red Flag xatarlarini aniqlang, raqobatchilarni o'rganing va aniq xarajatlar kalkulyatsiyasi orqali yutuqqa erishing.
+            <p className="max-w-2xl mx-auto text-lg md:text-xl text-surface-800 dark:text-surface-300 mb-10 leading-relaxed drop-shadow-sm font-medium">
+              {t('landing.hero_desc', "Davlat va korporativ xaridlarda hujjatlarni AI yordamida tahlil qiling. Red Flag xatarlarini aniqlang, raqobatchilarni o'rganing va aniq xarajatlar kalkulyatsiyasi orqali yutuqqa erishing.")}
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link to="/login" className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 text-base font-semibold text-white bg-primary-600 rounded-xl hover:bg-primary-700 transition-all shadow-lg shadow-primary-600/25 hover:shadow-xl hover:shadow-primary-600/30 hover:-translate-y-0.5">
-                Platformaga kirish
+                {t('landing.login_btn', 'Platformaga kirish')}
                 <ChevronRight className="w-5 h-5" />
               </Link>
-              <a href="#tenders" className="w-full sm:w-auto inline-flex items-center justify-center px-8 py-4 text-base font-semibold text-surface-700 dark:text-white bg-white/80 dark:bg-surface-800/80 backdrop-blur-md border border-surface-200 dark:border-surface-700 rounded-xl hover:bg-white dark:hover:bg-surface-700 transition-all shadow-sm">
-                Hozirgi tenderlar
+              <a href="#tenders" className="w-full sm:w-auto inline-flex items-center justify-center px-8 py-4 text-base font-semibold text-surface-700 dark:text-white bg-white/90 dark:bg-surface-800/90 backdrop-blur-md border border-surface-200 dark:border-surface-700 rounded-xl hover:bg-white dark:hover:bg-surface-700 transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5">
+                {t('landing.tenders_btn', 'Hozirgi tenderlar')}
               </a>
             </div>
             
@@ -156,7 +161,9 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-end mb-12">
             <div>
-              <h2 className="text-3xl font-bold text-surface-900 dark:text-white mb-4">Ochiq Tender Lotlari</h2>
+              <h2 className="text-3xl font-bold text-surface-900 dark:text-white mb-4">
+                {t('landing.open_tenders', 'Ochiq Tender Lotlari')}
+              </h2>
               <p className="text-surface-600 dark:text-surface-400">O'zbekistondagi so'nggi davlat va korporativ xaridlar ro'yxati.</p>
             </div>
             <Link to="/login" className="hidden sm:inline-flex items-center gap-2 text-primary-600 dark:text-primary-400 font-medium hover:underline">
@@ -188,8 +195,8 @@ export default function LandingPage() {
                     </span>
                   </div>
                   <div className="absolute bottom-4 left-4 z-20 text-white">
-                    <span className="text-xs font-medium text-white/80 mb-1 block">Boshlang'ich narx</span>
-                    <span className="text-lg font-bold">{tender.price}</span>
+                    <span className="text-xs font-medium text-white/90 mb-1 block drop-shadow-sm">{t('landing.start_price', "Boshlang'ich narx:")}</span>
+                    <span className="text-lg font-bold drop-shadow-md">{tender.price}</span>
                   </div>
                 </div>
 
@@ -197,7 +204,7 @@ export default function LandingPage() {
                 <div className="p-6 flex flex-col flex-1">
                   <div className="flex justify-between items-start mb-3">
                     <span className="text-xs font-medium text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/30 px-2.5 py-1 rounded-md border border-primary-100 dark:border-primary-800/50">
-                      Lot: #{tender.id}
+                      {t('landing.lot', 'Lot:')} #{tender.id}
                     </span>
                   </div>
                   
@@ -212,7 +219,7 @@ export default function LandingPage() {
 
                   <div className="mt-auto">
                     <div className="flex items-center justify-between text-sm mb-6 pb-6 border-b border-surface-200 dark:border-surface-800">
-                      <span className="text-surface-500">Tugash sanasi:</span>
+                      <span className="text-surface-500">{t('landing.deadline', 'Tugash sanasi:')}</span>
                       <span className="font-semibold text-danger-600 dark:text-danger-400 flex items-center gap-1.5">
                         <Clock className="w-4 h-4" /> {tender.deadline}
                       </span>
@@ -227,7 +234,7 @@ export default function LandingPage() {
                     </div>
 
                     <Link to="/login" className="flex items-center justify-center gap-2 w-full py-3 text-sm font-semibold text-surface-700 dark:text-white bg-white dark:bg-surface-800 border-2 border-surface-200 dark:border-surface-700 hover:border-primary-600 dark:hover:border-primary-500 hover:text-primary-600 dark:hover:text-primary-400 rounded-xl transition-all">
-                      AI orqali tahlil qilish <ChevronRight className="w-4 h-4" />
+                      {t('landing.analyze_btn', 'AI orqali tahlil qilish')} <ChevronRight className="w-4 h-4" />
                     </Link>
                   </div>
                 </div>
