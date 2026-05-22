@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, BarChart3, Calculator, LogOut, SlidersHorizontal, Calendar, Building2, CheckCircle2, Loader2, AlertCircle, Settings } from 'lucide-react';
+import { Search, BarChart3, Calculator, LogOut, SlidersHorizontal, Calendar, Building2, CheckCircle2, Loader2, AlertCircle, Settings, ArrowRight } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import ThemeToggle from '../components/ui/ThemeToggle';
 import LanguageSwitcher from '../components/ui/LanguageSwitcher';
 import apiClient from '../api/client';
+import { useTranslation } from 'react-i18next';
 
 export default function DashboardPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const logout = useAuthStore((state) => state.logout);
   const [searchQuery, setSearchQuery] = useState('');
@@ -20,13 +22,24 @@ export default function DashboardPage() {
   const [priceMax, setPriceMax] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
 
-  // Tenderlarni backenddan yuklash
+  // Extract lot number from URL if pasted
+  const extractLotNumber = (query) => {
+    if (query.includes('http')) {
+      const match = query.match(/\d+$/) || query.match(/\d+/);
+      if (match) return match[0];
+    }
+    return query;
+  };
+
   const fetchTenders = async (params = {}) => {
     setIsLoading(true);
     setError(null);
     try {
       const queryParams = new URLSearchParams();
-      if (params.search) queryParams.set('search', params.search);
+      if (params.search) {
+        const cleanSearch = extractLotNumber(params.search);
+        queryParams.set('search', cleanSearch);
+      }
       if (params.platform_source) queryParams.set('platform_source', params.platform_source);
       if (params.start_price_min) queryParams.set('start_price_min', params.start_price_min);
       if (params.start_price_max) queryParams.set('start_price_max', params.start_price_max);
@@ -34,33 +47,33 @@ export default function DashboardPage() {
       
       const url = `/tenders/?${queryParams.toString()}`;
       const { data } = await apiClient.get(url);
-      // DRF returns paginated or list
       setTenders(Array.isArray(data) ? data : (data.results || []));
     } catch (err) {
-      console.error('Tenders fetch error:', err);
-      setError('Tenderlarni yuklashda xatolik yuz berdi');
+      setError(t('error_loading'));
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Real-time search with debounce
   useEffect(() => {
-    fetchTenders();
-  }, []);
+    const delayDebounceFn = setTimeout(() => {
+      fetchTenders({
+        search: searchQuery,
+        platform_source: selectedPlatform,
+        start_price_min: priceMin,
+        start_price_max: priceMax,
+        category: selectedCategory,
+      });
+    }, 500); // 500ms debounce
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchQuery, selectedPlatform, priceMin, priceMax, selectedCategory]);
 
   const handleAnalyze = (e) => {
     e.preventDefault();
     if (!searchQuery.trim()) return;
-    navigate(`/analysis?q=${encodeURIComponent(searchQuery)}`);
-  };
-
-  const handleFilterApply = () => {
-    fetchTenders({
-      platform_source: selectedPlatform,
-      start_price_min: priceMin,
-      start_price_max: priceMax,
-      category: selectedCategory,
-    });
+    const cleanSearch = extractLotNumber(searchQuery);
+    navigate(`/analysis?q=${encodeURIComponent(cleanSearch)}`);
   };
 
   const handleTenderClick = (tender) => {
@@ -92,7 +105,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-surface-50 dark:bg-surface-950 font-sans transition-colors duration-300">
+    <div className="min-h-screen bg-gradient-to-br from-surface-50 via-white to-primary-50/30 dark:from-surface-950 dark:via-surface-900 dark:to-primary-950/20 font-sans transition-colors duration-500">
       {/* Top Navbar */}
       <header className="sticky top-0 z-50 bg-white/80 dark:bg-surface-900/80 backdrop-blur-md border-b border-surface-200 dark:border-surface-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -103,11 +116,28 @@ export default function DashboardPage() {
             </span>
           </div>
 
+          {/* Minimalist Search Bar inside Navbar for Desktop */}
+          <div className="hidden lg:flex flex-1 max-w-xl mx-8 relative group">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-surface-400 group-focus-within:text-primary-500 transition-colors" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={t('search_placeholder')}
+              className="w-full pl-10 pr-4 py-2 bg-surface-100 dark:bg-surface-800/50 border border-transparent focus:border-primary-500/50 rounded-full focus:outline-none focus:ring-4 focus:ring-primary-500/10 text-sm text-surface-900 dark:text-white placeholder:text-surface-400 transition-all shadow-sm"
+            />
+            {searchQuery && (
+              <button onClick={handleAnalyze} className="absolute right-1.5 top-1/2 -translate-y-1/2 bg-primary-600 text-white p-1.5 rounded-full hover:bg-primary-700 transition-colors">
+                 <ArrowRight className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+
           <div className="flex items-center gap-4">
             <ThemeToggle />
             <LanguageSwitcher />
             <span className="hidden sm:inline-flex items-center gap-1 text-sm font-medium text-surface-600 bg-surface-100 dark:bg-surface-800 px-3 py-1.5 rounded-full border border-surface-200 dark:border-surface-700">
-              <CheckCircle2 className="w-4 h-4 text-success-500" /> Bepul Tarif
+              <CheckCircle2 className="w-4 h-4 text-success-500" /> {t('free_plan')}
             </span>
             <button
               onClick={() => navigate('/settings')}
@@ -130,51 +160,26 @@ export default function DashboardPage() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
-        {/* Main Search Section (Hero-style) */}
-        <div className="bg-white dark:bg-surface-900 rounded-3xl p-8 sm:p-12 mb-8 shadow-card border border-surface-200 dark:border-surface-800 text-center relative overflow-hidden">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-2xl h-full bg-primary-500/5 dark:bg-primary-500/10 blur-3xl pointer-events-none rounded-full" />
-          
-          <div className="relative z-10 max-w-3xl mx-auto">
-            <div className="w-16 h-16 bg-primary-100 dark:bg-primary-900/30 rounded-2xl flex items-center justify-center mx-auto mb-6">
-              <Search className="w-8 h-8 text-primary-600 dark:text-primary-400" />
-            </div>
-            <h1 className="text-3xl sm:text-4xl font-extrabold text-surface-900 dark:text-white mb-4">
-              Lot raqami, havola yoki nomi
-            </h1>
-            <p className="text-surface-600 dark:text-surface-400 mb-8 text-lg">
-              Tender hujjatlarini AI orqali yuridik va moliyaviy tahlil qilish uchun qidiring.
-            </p>
-
-            <form onSubmit={handleAnalyze} className="relative flex flex-col sm:flex-row gap-3">
-              <div className="relative flex-1">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 text-surface-400" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Masalan: 24110012 yoki https://xarid.uzex.uz/..."
-                  className="w-full pl-12 pr-4 py-4 sm:py-5 bg-surface-50 dark:bg-surface-950 border border-surface-200 dark:border-surface-700 rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary-500 text-lg text-surface-900 dark:text-white placeholder:text-surface-400 transition-shadow shadow-inner"
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={!searchQuery.trim()}
-                className="px-8 py-4 sm:py-5 bg-primary-600 hover:bg-primary-700 text-white font-bold text-lg rounded-2xl transition-colors shadow-lg shadow-primary-600/25 hover:shadow-xl hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex items-center justify-center gap-2"
-              >
-                Tahlil qilish <BarChart3 className="w-5 h-5" />
-              </button>
-            </form>
-          </div>
+        {/* Mobile Search Bar */}
+        <div className="lg:hidden mb-6 relative">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-surface-400" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={t('search_placeholder')}
+            className="w-full pl-11 pr-4 py-3 bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary-500 text-surface-900 dark:text-white shadow-sm"
+          />
         </div>
 
         {/* Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
           {[
-            { label: 'Faol tenderlar', value: isLoading ? '...' : tenders.length.toLocaleString(), icon: Search, color: 'text-primary-500' },
-            { label: 'Tahlillarim', value: '0 / 4', icon: BarChart3, color: 'text-success-500' },
-            { label: 'O\'rtacha moslik', value: '—', icon: Calculator, color: 'text-warning-500' },
+            { label: t('active_tenders'), value: isLoading ? '...' : tenders.length.toLocaleString(), icon: Search, color: 'text-primary-500' },
+            { label: t('my_analyses'), value: '0 / 4', icon: BarChart3, color: 'text-success-500' },
+            { label: t('avg_match'), value: '—', icon: Calculator, color: 'text-warning-500' },
           ].map((stat) => (
-            <div key={stat.label} className="bg-white dark:bg-surface-900 rounded-2xl p-6 shadow-sm border border-surface-200 dark:border-surface-800 flex items-center gap-4">
+            <div key={stat.label} className="bg-white dark:bg-surface-900 rounded-2xl p-6 shadow-sm border border-surface-200 dark:border-surface-800 flex items-center gap-4 hover:shadow-md transition-shadow">
               <div className={`p-3 rounded-xl bg-surface-100 dark:bg-surface-800 ${stat.color}`}>
                 <stat.icon className="w-6 h-6" />
               </div>
@@ -196,15 +201,15 @@ export default function DashboardPage() {
             <div className="bg-white dark:bg-surface-900 rounded-2xl p-6 shadow-sm border border-surface-200 dark:border-surface-800 sticky top-24">
               <div className="flex items-center gap-2 mb-6 pb-4 border-b border-surface-200 dark:border-surface-800">
                 <SlidersHorizontal className="w-5 h-5 text-surface-500" />
-                <h3 className="text-lg font-bold text-surface-900 dark:text-white">Filtrlar</h3>
+                <h3 className="text-lg font-bold text-surface-900 dark:text-white">{t('filters')}</h3>
               </div>
               
               <div className="space-y-6">
                 <div>
-                  <label className="text-sm font-semibold text-surface-700 dark:text-surface-300 mb-3 block">Platforma</label>
+                  <label className="text-sm font-semibold text-surface-700 dark:text-surface-300 mb-3 block">{t('platform')}</label>
                   <div className="space-y-2">
                     {[
-                      { value: '', label: 'Barchasi' },
+                      { value: '', label: t('all') },
                       { value: 'xarid_uzex', label: 'xarid.uzex.uz' },
                       { value: 'dxarid_uzex', label: 'dxarid.uzex.uz' },
                       { value: 'exarid_uzex', label: 'exarid.uzex.uz' },
@@ -224,18 +229,18 @@ export default function DashboardPage() {
                 </div>
 
                 <div>
-                  <label className="text-sm font-semibold text-surface-700 dark:text-surface-300 mb-3 block">Boshlang'ich Narx</label>
+                  <label className="text-sm font-semibold text-surface-700 dark:text-surface-300 mb-3 block">{t('start_price')}</label>
                   <div className="flex items-center gap-2">
-                    <input type="number" placeholder="Dan" value={priceMin} onChange={e => setPriceMin(e.target.value)} className="w-full px-3 py-2 text-sm bg-surface-50 dark:bg-surface-950 border border-surface-200 dark:border-surface-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500" />
+                    <input type="number" placeholder={t('from')} value={priceMin} onChange={e => setPriceMin(e.target.value)} className="w-full px-3 py-2 text-sm bg-surface-50 dark:bg-surface-950 border border-surface-200 dark:border-surface-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500" />
                     <span className="text-surface-400">-</span>
-                    <input type="number" placeholder="Gacha" value={priceMax} onChange={e => setPriceMax(e.target.value)} className="w-full px-3 py-2 text-sm bg-surface-50 dark:bg-surface-950 border border-surface-200 dark:border-surface-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500" />
+                    <input type="number" placeholder={t('to')} value={priceMax} onChange={e => setPriceMax(e.target.value)} className="w-full px-3 py-2 text-sm bg-surface-50 dark:bg-surface-950 border border-surface-200 dark:border-surface-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500" />
                   </div>
                 </div>
 
                 <div>
-                  <label className="text-sm font-semibold text-surface-700 dark:text-surface-300 mb-3 block">Soha / Kategoriya</label>
+                  <label className="text-sm font-semibold text-surface-700 dark:text-surface-300 mb-3 block">{t('category')}</label>
                   <select value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)} className="w-full px-3 py-2 text-sm bg-surface-50 dark:bg-surface-950 border border-surface-200 dark:border-surface-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 text-surface-700 dark:text-surface-300">
-                    <option value="">Barcha sohalar</option>
+                    <option value="">{t('all')}</option>
                     <option value="IT uskunalar">IT va Dasturlash</option>
                     <option value="Qurilish">Qurilish va ta'mirlash</option>
                     <option value="Mebel">Mebel va ofis jihozlari</option>
@@ -245,10 +250,10 @@ export default function DashboardPage() {
                 </div>
                 
                 <button 
-                  onClick={handleFilterApply}
+                  onClick={() => {}}
                   className="w-full py-2.5 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold rounded-lg transition-colors"
                 >
-                  Filtrni qo'llash
+                  {t('apply_filter')}
                 </button>
               </div>
             </div>

@@ -11,10 +11,6 @@ export default function SettingsPage() {
   const [isSaved, setIsSaved] = useState(false);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    loadProfile();
-  }, []);
-
   const loadProfile = async () => {
     setIsLoading(true);
     try {
@@ -43,6 +39,10 @@ export default function SettingsPage() {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadProfile();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
