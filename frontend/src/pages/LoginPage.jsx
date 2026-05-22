@@ -81,11 +81,11 @@ export default function LoginPage() {
             transition={{ duration: 0.5 }}
             className="text-center mb-8 flex flex-col items-center"
           >
-            <div className="w-24 h-24 mb-4 rounded-2xl overflow-hidden shadow-lg shadow-surface-200 dark:shadow-surface-900/50 flex items-center justify-center bg-white dark:bg-[#0A101D]">
+            <div className="w-24 h-24 mb-4 flex items-center justify-center">
               <img 
-                src="/assets/logo-dark.jpg" 
+                src="/logo/logo-cropped.png" 
                 alt="TenderHelper Logo" 
-                className="w-full h-full object-contain"
+                className="w-full h-full object-contain drop-shadow-md"
               />
             </div>
             <h1 className="text-2xl font-bold text-surface-900 dark:text-white">
