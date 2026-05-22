@@ -14,6 +14,7 @@ import DashboardPage from '../pages/DashboardPage';
 import OnboardingPage from '../pages/OnboardingPage';
 import NotFoundPage from '../pages/NotFoundPage';
 import GoogleCallbackPage from '../pages/GoogleCallbackPage';
+import TenderAnalysisPage from '../pages/TenderAnalysisPage';
 
 /**
  * Himoyalangan yo'nalish — faqat autentifikatsiya qilingan foydalanuvchilar
@@ -58,6 +59,15 @@ export default function AppRouter() {
           element={
             <PrivateRoute>
               <DashboardPage />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/analysis"
+          element={
+            <PrivateRoute>
+              <TenderAnalysisPage />
             </PrivateRoute>
           }
         />
