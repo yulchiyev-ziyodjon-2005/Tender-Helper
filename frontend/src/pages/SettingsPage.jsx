@@ -1,20 +1,48 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Building2, Save, ArrowLeft, Building, Hash, CreditCard, Tag } from 'lucide-react';
-import useAuthStore from '../store/authStore';
+import { Building2, Save, ArrowLeft, Building, Hash, CreditCard, Tag, Loader2, AlertCircle } from 'lucide-react';
+import apiClient from '../api/client';
 
 export default function SettingsPage() {
   const navigate = useNavigate();
-  // Fake profile load to allow bypass UI testing
-  const [profile, setProfile] = useState({
-    companyName: 'Akfa Group MChJ',
-    stir: '123456789',
-    companyType: 'mchj',
-    hasVat: true,
-    industry: 'Ishlab chiqarish',
-  });
+  const [profile, setProfile] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    loadProfile();
+  }, []);
+
+  const loadProfile = async () => {
+    setIsLoading(true);
+    try {
+      const { data } = await apiClient.get('/company/profile/');
+      setProfile({
+        companyName: data.company_name || '',
+        stir: data.stir || '',
+        companyType: data.company_type || 'mchj',
+        hasVat: data.has_vat || false,
+        industry: data.industry || '',
+      });
+    } catch (err) {
+      // Profile might not exist yet — allow creation
+      if (err.response?.status === 404) {
+        setProfile({
+          companyName: '',
+          stir: '',
+          companyType: 'mchj',
+          hasVat: false,
+          industry: '',
+        });
+      } else {
+        setError('Profil ma\'lumotlarini yuklashda xatolik');
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -28,14 +56,32 @@ export default function SettingsPage() {
   const handleSave = async (e) => {
     e.preventDefault();
     setIsSaving(true);
-    // Simulyatsiya (Mock save)
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setIsSaving(false);
-    setIsSaved(true);
-    
-    // Toast xabar o'rniga oddiy timeout orqali isSaved ni o'chirish
-    setTimeout(() => setIsSaved(false), 3000);
+    setError(null);
+    try {
+      await apiClient.patch('/company/profile/', {
+        company_name: profile.companyName,
+        stir: profile.stir || null,
+        company_type: profile.companyType,
+        has_vat: profile.hasVat,
+        industry: profile.industry,
+      });
+      setIsSaved(true);
+      setTimeout(() => setIsSaved(false), 3000);
+    } catch (err) {
+      const msg = err.response?.data?.message || err.response?.data?.stir?.[0] || 'Saqlashda xatolik';
+      setError(msg);
+    } finally {
+      setIsSaving(false);
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-surface-50 dark:bg-surface-950 flex items-center justify-center">
+        <Loader2 className="w-10 h-10 text-primary-500 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-surface-50 dark:bg-surface-950 font-sans pb-12">
@@ -68,6 +114,13 @@ export default function SettingsPage() {
             </p>
           </div>
 
+          {error && (
+            <div className="mx-6 mt-6 p-4 bg-danger-50 dark:bg-danger-900/20 border border-danger-200 dark:border-danger-800 rounded-xl flex items-center gap-3">
+              <AlertCircle className="w-5 h-5 text-danger-500 flex-shrink-0" />
+              <p className="text-danger-700 dark:text-danger-300 text-sm">{error}</p>
+            </div>
+          )}
+
           <form onSubmit={handleSave} className="p-6 sm:p-8 space-y-6">
             
             {/* STIR */}
@@ -78,7 +131,7 @@ export default function SettingsPage() {
               <input
                 type="text"
                 name="stir"
-                value={profile.stir}
+                value={profile?.stir || ''}
                 onChange={handleChange}
                 maxLength={9}
                 placeholder="9 xonali raqam"
@@ -94,7 +147,7 @@ export default function SettingsPage() {
               <input
                 type="text"
                 name="companyName"
-                value={profile.companyName}
+                value={profile?.companyName || ''}
                 onChange={handleChange}
                 placeholder="Masalan: OOO 'Tech Solutions'"
                 className="w-full px-4 py-3 bg-surface-50 dark:bg-surface-950 border border-surface-200 dark:border-surface-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 text-surface-900 dark:text-white font-medium"
@@ -109,14 +162,14 @@ export default function SettingsPage() {
                 </label>
                 <select
                   name="companyType"
-                  value={profile.companyType}
+                  value={profile?.companyType || 'mchj'}
                   onChange={handleChange}
                   className="w-full px-4 py-3 bg-surface-50 dark:bg-surface-950 border border-surface-200 dark:border-surface-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 text-surface-900 dark:text-white font-medium"
                 >
                   <option value="mchj">MChJ</option>
                   <option value="yatt">YaTT</option>
-                  <option value="xk">XK</option>
                   <option value="aj">AJ</option>
+                  <option value="tt">TT</option>
                 </select>
               </div>
 
@@ -128,7 +181,7 @@ export default function SettingsPage() {
                 <input
                   type="text"
                   name="industry"
-                  value={profile.industry}
+                  value={profile?.industry || ''}
                   onChange={handleChange}
                   placeholder="IT, Qurilish, Tibbiyot..."
                   className="w-full px-4 py-3 bg-surface-50 dark:bg-surface-950 border border-surface-200 dark:border-surface-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 text-surface-900 dark:text-white font-medium"
@@ -144,14 +197,14 @@ export default function SettingsPage() {
                     <CreditCard className="w-5 h-5 text-surface-400" /> QQS to'lovchisi
                   </div>
                   <p className="text-sm text-surface-500 mt-1 ml-7">
-                    Kalkulyatorda QQS (12%) avtomatik hisobga olinadi. Agar QQS siz ishlasangiz, buni o'chiring.
+                    Kalkulyatorda QQS (12%) avtomatik hisobga olinadi.
                   </p>
                 </div>
                 <div className="relative inline-flex items-center">
                   <input 
                     type="checkbox" 
                     name="hasVat"
-                    checked={profile.hasVat}
+                    checked={profile?.hasVat || false}
                     onChange={handleChange}
                     className="sr-only peer" 
                   />
@@ -164,7 +217,7 @@ export default function SettingsPage() {
             <div className="pt-6 flex items-center justify-end gap-4 border-t border-surface-200 dark:border-surface-800">
               {isSaved && (
                 <span className="text-success-600 dark:text-success-400 font-medium text-sm animate-pulse">
-                  Muvaffaqiyatli saqlandi!
+                  ✓ Muvaffaqiyatli saqlandi!
                 </span>
               )}
               <button

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Calculator, AlertTriangle, TrendingDown, TrendingUp, Info } from 'lucide-react';
+import apiClient from '../../api/client';
 
-export default function SmartCalculator({ tenderPrice = 0 }) {
+export default function SmartCalculator({ tenderPrice = 0, analysisId }) {
   // Inputs
   const [cost, setCost] = useState('');
   
@@ -23,30 +24,32 @@ export default function SmartCalculator({ tenderPrice = 0 }) {
 
   useEffect(() => {
     const rawCost = Number(cost.replace(/[^0-9]/g, '')) || 0;
-    
-    // Yutish narxi default sifatida tenderning boshlang'ich narxi olinadi. 
-    // Haqiqiy hayotda buni foydalanuvchi tushirib berishi mumkin.
     const winPrice = tenderPrice; 
 
     const vat = rawCost * vatRate;
     const uzexFee = winPrice * uzexRate;
-    const guarantee = winPrice * guaranteeRate; // Zakalat (qaytariladigan summa, lekin aylanmadan chiqadi)
+    const guarantee = winPrice * guaranteeRate;
     
     const totalCost = rawCost + vat + uzexFee;
     const profit = winPrice - totalCost;
     const profitMargin = winPrice > 0 ? (profit / winPrice) * 100 : 0;
-    const stopLoss = totalCost; // Foyda keltirmaydigan chegara
+    const stopLoss = totalCost;
 
-    setResults({
-      vat,
-      uzexFee,
-      guarantee,
-      totalCost,
-      profit,
-      profitMargin,
-      stopLoss
-    });
-  }, [cost, tenderPrice]);
+    setResults({ vat, uzexFee, guarantee, totalCost, profit, profitMargin, stopLoss });
+
+    // Sync with backend if analysisId is provided
+    if (analysisId && rawCost > 0) {
+      const syncDebounce = setTimeout(() => {
+        apiClient.post(`/analysis/${analysisId}/calculate/`, {
+          raw_material_cost: rawCost,
+          logistics_cost: 0,
+          labor_cost: 0,
+          other_expenses: 0
+        }).catch(err => console.error('Calculator sync failed:', err));
+      }, 1000);
+      return () => clearTimeout(syncDebounce);
+    }
+  }, [cost, tenderPrice, analysisId]);
 
   const formatMoney = (amount) => {
     return new Intl.NumberFormat('uz-UZ', { style: 'currency', currency: 'UZS', maximumFractionDigits: 0 }).format(amount);
