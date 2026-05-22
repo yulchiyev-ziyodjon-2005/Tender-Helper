@@ -18,10 +18,24 @@ from .serializers import (
 
 
 def _current_company(user, company_id=None):
-    queryset = CompanyProfile.objects.filter(user=user)
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+    
+    try:
+        # Check if user is a valid User instance by trying to get its id
+        user_id = getattr(user, 'id', None)
+        if not user_id or not getattr(user, 'is_authenticated', False):
+            raise ValueError("Not authenticated")
+    except Exception:
+        # Demo mode fallback
+        demo_user = User.objects.filter(email='demo@tenderhelper.uz').first()
+        if demo_user:
+            return CompanyProfile.objects.filter(user=demo_user).first()
+        return None
+        
     if company_id:
-        return get_object_or_404(queryset, id=company_id)
-    return queryset.order_by('-created_at').first()
+        return CompanyProfile.objects.filter(id=company_id, user=user).first()
+    return CompanyProfile.objects.filter(user=user).first()
 
 
 def _collect_tender_text(tender, additional_text=''):
@@ -32,106 +46,121 @@ def _collect_tender_text(tender, additional_text=''):
     return text or tender.title
 
 
+import json
+import requests
+from django.conf import settings
+
 def _run_rule_based_analysis(analysis, tender_text):
     """
-    MVP fallback tahlil.
-    Gemini integratsiyasi ulanmaguncha API oqimini barqaror ishlatadi.
+    Haqiqiy Gemini API (Flash/Pro) REST API orqali.
     """
     tender = analysis.tender_lot
-    text_lower = tender_text.lower()
-    red_flags = []
-    requirements = []
-    standards = []
-    missing_documents = [
-        {
-            'name': "STIR guvohnomasi yoki ro'yxatdan o'tganlik hujjati",
-            'reason': "Deyarli barcha tenderlarda korxona identifikatsiyasi so'raladi",
-            'category': 'company_type',
-        },
-        {
-            'name': "Soliq qarzdorligi yo'qligi haqida ma'lumot",
-            'reason': "Diskvalifikatsiya xavfini kamaytiradi",
-            'category': 'common',
-        },
-    ]
+    company = analysis.company
+    
+    prompt = f"""
+    Siz professional tender va davlat xaridlari bo'yicha yurist va tahlilchisiz.
+    Quyida tender loti haqida ma'lumot va uning texnik topshiriqlari keltirilgan.
+    Shuningdek, ushbu tenderda ishtirok etmoqchi bo'lgan kompaniya ma'lumotlari ham bor.
+    Sizning vazifangiz tenderni tahlil qilish va qat'iy JSON formatida javob berish.
 
-    days_left = (tender.deadline - timezone.now()).days
-    if days_left < 10:
-        red_flags.append({
-            'level': 'warning',
-            'title': 'Tayyorlanish muddati qisqa',
-            'reason': f'Ariza topshirishga taxminan {max(days_left, 0)} kun qoldi',
-            'recommendation': "Hujjatlar tayyor bo'lmasa, qatnashishdan oldin muddatni baholang",
-        })
+    KOMPANIYA:
+    Nomi: {company.company_name}
+    Tashkiliy shakli: {company.company_type}
+    Sohasi: {company.industry}
+    QQS to'lovchimi: {'Ha' if company.has_vat else 'Yoq'}
 
-    if any(word in text_lower for word in ['faqat', 'ekvivalent qabul qilinmaydi', 'brend']):
-        red_flags.append({
-            'level': 'blocker',
-            'title': "Raqobatni cheklashi mumkin bo'lgan shart",
-            'reason': "Matnda aniq brend yoki muqobilni cheklovchi iboralar uchradi",
-            'recommendation': "Texnik shartlarni huquqshunos yoki soha mutaxassisi bilan tekshiring",
-        })
+    TENDER:
+    Sarlavha: {tender.title}
+    Buyurtmachi: {tender.buyer_name}
+    Narxi: {tender.start_price} so'm
+    Matn:
+    {tender_text[:10000]}
 
-    if any(word in text_lower for word in ['jarima', 'penya']):
-        red_flags.append({
-            'level': 'warning',
-            'title': 'Jarima shartlari bor',
-            'reason': "Shartnomada moliyaviy javobgarlik bandlari bo'lishi mumkin",
-            'recommendation': "Jarima foizlari va muddatlarini alohida hisoblang",
-        })
-
-    for standard in ['ozdst', "o'zdst", 'gost', 'iso']:
-        if standard in text_lower:
-            standards.append({
-                'name': standard.upper(),
-                'meaning': "Tender matnida standart talabi aniqlangan",
-                'action': "Mahsulot yoki xizmat sertifikatlari mosligini tekshiring",
-            })
-
-    requirements.append({
-        'original': tender.title,
-        'plain': "Tender predmeti bo'yicha yetkazib berish yoki xizmat ko'rsatish talab qilinadi",
-        'action': "Texnik topshiriqdagi miqdor, muddat va sifat talablarini tekshiring",
-    })
-
-    risk_penalty = min(len(red_flags) * 15, 45)
-    score = max(50, 85 - risk_penalty)
-    risk_percent = min(20 + risk_penalty, 90)
-    recommendation = "Qatnashish mumkin, lekin risklarni tekshiring"
-    if any(flag['level'] == 'blocker' for flag in red_flags):
-        recommendation = "Ehtiyot bo'ling: bloklovchi risk bor"
-    elif score >= 75:
-        recommendation = "Qatnashish uchun yaxshi nomzod"
-
-    analysis.analysis_status = AITenderAnalysis.Status.COMPLETED
-    analysis.eligibility_score = score
-    analysis.summary_text = (
-        f"{tender.buyer_name or 'Buyurtmachi'} uchun '{tender.title}' tenderi. "
-        f"Boshlang'ich narx: {tender.start_price} so'm. "
-        "Bu avtomatik MVP tahlil bo'lib, yakuniy qaror uchun hujjatlarni qayta tekshiring."
-    )
-    analysis.missing_documents = missing_documents
-    analysis.red_flags = red_flags
-    analysis.requirements = requirements
-    analysis.standards = standards
-    analysis.decision = {
-        'fit_percent': score,
-        'risk_percent': risk_percent,
-        'recommendation': recommendation,
-        'next_actions': [
-            "Tender hujjatlarini to'liq yuklab oling",
-            "Kalkulyatorda stop-loss narxini hisoblang",
-            "Red flag bandlarini huquqshunos bilan tekshiring",
+    Iltimos, faqat quyidagi JSON strukturasida javob qaytaring (hech qanday markdown yoki qo'shimcha matnsiz, faqat JSON formatida):
+    {{
+        "eligibility_score": 85,
+        "summary_text": "<qisqa xulosa, maks 300 belgi>",
+        "missing_documents": [
+            {{"name": "Hujjat nomi", "reason": "Nima uchun kerak", "category": "common"}}
         ],
-        'disclaimer': "Ushbu natija huquqiy maslahat emas.",
-    }
+        "red_flags": [
+            {{"level": "blocker yoki warning", "title": "Sarlavha", "reason": "Izoh", "recommendation": "Maslahat"}}
+        ],
+        "standards": [
+            {{"name": "ISO/GOST", "meaning": "Ma'nosi", "action": "Nima qilish kerak"}}
+        ],
+        "requirements": [
+            {{"original": "Asl matn", "plain": "Sodda tili", "action": "Bajarilishi kerak"}}
+        ],
+        "decision": {{
+            "fit_percent": 85,
+            "risk_percent": 15,
+            "recommendation": "Tavsiya",
+            "next_actions": ["qadam 1", "qadam 2"],
+            "disclaimer": "Ushbu natija huquqiy maslahat emas."
+        }}
+    }}
+    """
+    
+    try:
+        url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyA7TUJwcdJtw_S9IHEPZaXsEQW3uq8tbZ4"
+        payload = {
+            "contents": [{"parts": [{"text": prompt}]}],
+            "generationConfig": {
+                "temperature": 0.2,
+                "responseMimeType": "application/json"
+            }
+        }
+        
+        session = requests.Session()
+        session.trust_env = False
+        response = session.post(
+            url, 
+            json=payload, 
+            headers={'Content-Type': 'application/json'}, 
+            timeout=30
+        )
+        response.raise_for_status()
+        res_json = response.json()
+        
+        result_str = res_json['candidates'][0]['content']['parts'][0]['text']
+        
+        # Fallback agar model markdown bilan o'rab qoysa
+        if result_str.startswith("```json"):
+            result_str = result_str[7:-3].strip()
+        elif result_str.startswith("```"):
+            result_str = result_str[3:-3].strip()
+            
+        data = json.loads(result_str)
+        
+        analysis.analysis_status = AITenderAnalysis.Status.COMPLETED
+        analysis.eligibility_score = data.get('eligibility_score', 50)
+        analysis.summary_text = data.get('summary_text', '')
+        analysis.missing_documents = data.get('missing_documents', [])
+        analysis.red_flags = data.get('red_flags', [])
+        analysis.requirements = data.get('requirements', [])
+        analysis.standards = data.get('standards', [])
+        analysis.decision = data.get('decision', {})
+        
+    except Exception as e:
+        print(f"Gemini API Error: {str(e)}")
+        # Xatolik bo'lganda mock qaytarish
+        analysis.analysis_status = AITenderAnalysis.Status.FAILED
+        analysis.error_message = str(e)
+        analysis.eligibility_score = 0
+        analysis.summary_text = f"API Xatoligi: {str(e)}"
+
     analysis.save()
     return analysis
+
 
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def start_analysis_view(request):
+    print("DEBUG request.user:", request.user)
+    print("DEBUG request.user type:", type(request.user))
+    
     serializer = StartAnalysisSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
     data = serializer.validated_data
