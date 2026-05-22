@@ -1,33 +1,95 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, Search, BarChart3, Calculator, LogOut, Filter, SlidersHorizontal, MapPin, Calendar, Building2, CheckCircle2 } from 'lucide-react';
+import { Search, BarChart3, Calculator, LogOut, SlidersHorizontal, Calendar, Building2, CheckCircle2, Loader2, AlertCircle, Settings } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import ThemeToggle from '../components/ui/ThemeToggle';
 import LanguageSwitcher from '../components/ui/LanguageSwitcher';
+import apiClient from '../api/client';
 
 export default function DashboardPage() {
   const navigate = useNavigate();
   const logout = useAuthStore((state) => state.logout);
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // Real API state
+  const [tenders, setTenders] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [selectedPlatform, setSelectedPlatform] = useState('');
+  const [priceMin, setPriceMin] = useState('');
+  const [priceMax, setPriceMax] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
 
-  const stats = [
-    { label: 'Faol tenderlar', value: '1,248', icon: Search, color: 'text-primary-500' },
-    { label: 'Tahlillarim', value: '0 / 4', icon: BarChart3, color: 'text-success-500' },
-    { label: 'O\'rtacha moslik', value: '85%', icon: Calculator, color: 'text-warning-500' },
-  ];
+  // Tenderlarni backenddan yuklash
+  const fetchTenders = async (params = {}) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const queryParams = new URLSearchParams();
+      if (params.search) queryParams.set('search', params.search);
+      if (params.platform_source) queryParams.set('platform_source', params.platform_source);
+      if (params.start_price_min) queryParams.set('start_price_min', params.start_price_min);
+      if (params.start_price_max) queryParams.set('start_price_max', params.start_price_max);
+      if (params.category) queryParams.set('category', params.category);
+      
+      const url = `/tenders/?${queryParams.toString()}`;
+      const { data } = await apiClient.get(url);
+      // DRF returns paginated or list
+      setTenders(Array.isArray(data) ? data : (data.results || []));
+    } catch (err) {
+      console.error('Tenders fetch error:', err);
+      setError('Tenderlarni yuklashda xatolik yuz berdi');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTenders();
+  }, []);
 
   const handleAnalyze = (e) => {
     e.preventDefault();
     if (!searchQuery.trim()) return;
-    // Navigate to analysis page with the query
     navigate(`/analysis?q=${encodeURIComponent(searchQuery)}`);
   };
 
-  const mockRecentTenders = [
-    { id: '24110012', title: 'Kompyuter texnikalari va server uskunalarini xarid qilish', customer: 'Raqamli Texnologiyalar Vazirligi', price: '1,250,000,000 UZS', deadline: '01.06.2026', platform: 'xarid.uzex.uz', tags: ['IT', 'Uskunalar'] },
-    { id: '24110085', title: 'Yangi ofis binosi uchun zamonaviy mebel jihozlari', customer: 'O\'zsanoatqurilishbank ATB', price: '450,000,000 UZS', deadline: '28.05.2026', platform: 'etender.uzex.uz', tags: ['Mebel', 'Korporativ'] },
-    { id: '24110103', title: 'Bulutli infratuzilma (Cloud) ijara xizmatlari', customer: 'Elektron Hukumat Markazi', price: '890,000,000 UZS', deadline: '15.06.2026', platform: 'xarid.uzex.uz', tags: ['IT', 'Xizmatlar'] },
-  ];
+  const handleFilterApply = () => {
+    fetchTenders({
+      platform_source: selectedPlatform,
+      start_price_min: priceMin,
+      start_price_max: priceMax,
+      category: selectedCategory,
+    });
+  };
+
+  const handleTenderClick = (tender) => {
+    navigate(`/analysis?lotId=${tender.id}&lotNumber=${tender.lot_number}`);
+  };
+
+  const formatMoney = (amount) => {
+    return new Intl.NumberFormat('uz-UZ').format(amount) + ' UZS';
+  };
+
+  const formatDate = (dateStr) => {
+    return new Date(dateStr).toLocaleDateString('uz-UZ', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  };
+
+  const getPlatformLabel = (source) => {
+    const map = {
+      'xarid_uzex': 'xarid.uzex.uz',
+      'dxarid_uzex': 'dxarid.uzex.uz',
+      'exarid_uzex': 'exarid.uzex.uz',
+      'e_auksion': 'e-auksion.uz',
+      'manual': "Qo'lda kiritilgan",
+    };
+    return map[source] || source;
+  };
+
+  const getDaysLeft = (deadline) => {
+    const days = Math.ceil((new Date(deadline) - new Date()) / (1000 * 60 * 60 * 24));
+    return days;
+  };
 
   return (
     <div className="min-h-screen bg-surface-50 dark:bg-surface-950 font-sans transition-colors duration-300">
@@ -52,7 +114,7 @@ export default function DashboardPage() {
               className="p-2 text-surface-500 hover:text-primary-600 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
               title="Sozlamalar"
             >
-              <Building2 className="w-5 h-5" />
+              <Settings className="w-5 h-5" />
             </button>
             <button
               onClick={logout}
@@ -70,7 +132,6 @@ export default function DashboardPage() {
         
         {/* Main Search Section (Hero-style) */}
         <div className="bg-white dark:bg-surface-900 rounded-3xl p-8 sm:p-12 mb-8 shadow-card border border-surface-200 dark:border-surface-800 text-center relative overflow-hidden">
-          {/* Subtle background glow */}
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-2xl h-full bg-primary-500/5 dark:bg-primary-500/10 blur-3xl pointer-events-none rounded-full" />
           
           <div className="relative z-10 max-w-3xl mx-auto">
@@ -81,7 +142,7 @@ export default function DashboardPage() {
               Lot raqami, havola yoki nomi
             </h1>
             <p className="text-surface-600 dark:text-surface-400 mb-8 text-lg">
-              Tender hujjatlarini Gemini AI orqali yuridik va moliyaviy tahlil qilish uchun qidiring.
+              Tender hujjatlarini AI orqali yuridik va moliyaviy tahlil qilish uchun qidiring.
             </p>
 
             <form onSubmit={handleAnalyze} className="relative flex flex-col sm:flex-row gap-3">
@@ -108,7 +169,11 @@ export default function DashboardPage() {
 
         {/* Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
-          {stats.map((stat) => (
+          {[
+            { label: 'Faol tenderlar', value: isLoading ? '...' : tenders.length.toLocaleString(), icon: Search, color: 'text-primary-500' },
+            { label: 'Tahlillarim', value: '0 / 4', icon: BarChart3, color: 'text-success-500' },
+            { label: 'O\'rtacha moslik', value: '—', icon: Calculator, color: 'text-warning-500' },
+          ].map((stat) => (
             <div key={stat.label} className="bg-white dark:bg-surface-900 rounded-2xl p-6 shadow-sm border border-surface-200 dark:border-surface-800 flex items-center gap-4">
               <div className={`p-3 rounded-xl bg-surface-100 dark:bg-surface-800 ${stat.color}`}>
                 <stat.icon className="w-6 h-6" />
@@ -138,10 +203,21 @@ export default function DashboardPage() {
                 <div>
                   <label className="text-sm font-semibold text-surface-700 dark:text-surface-300 mb-3 block">Platforma</label>
                   <div className="space-y-2">
-                    {['Barchasi', 'xarid.uzex.uz', 'etender.uzex.uz', 'Kooperatsiya'].map(platform => (
-                      <label key={platform} className="flex items-center gap-3 cursor-pointer group">
-                        <input type="radio" name="platform" defaultChecked={platform === 'Barchasi'} className="w-4 h-4 text-primary-600 border-surface-300 focus:ring-primary-600 bg-surface-50 dark:bg-surface-800 dark:border-surface-600" />
-                        <span className="text-sm text-surface-600 dark:text-surface-400 group-hover:text-surface-900 dark:group-hover:text-white transition-colors">{platform}</span>
+                    {[
+                      { value: '', label: 'Barchasi' },
+                      { value: 'xarid_uzex', label: 'xarid.uzex.uz' },
+                      { value: 'dxarid_uzex', label: 'dxarid.uzex.uz' },
+                      { value: 'exarid_uzex', label: 'exarid.uzex.uz' },
+                    ].map(platform => (
+                      <label key={platform.label} className="flex items-center gap-3 cursor-pointer group">
+                        <input 
+                          type="radio" 
+                          name="platform" 
+                          checked={selectedPlatform === platform.value}
+                          onChange={() => setSelectedPlatform(platform.value)} 
+                          className="w-4 h-4 text-primary-600 border-surface-300 focus:ring-primary-600 bg-surface-50 dark:bg-surface-800 dark:border-surface-600" 
+                        />
+                        <span className="text-sm text-surface-600 dark:text-surface-400 group-hover:text-surface-900 dark:group-hover:text-white transition-colors">{platform.label}</span>
                       </label>
                     ))}
                   </div>
@@ -150,23 +226,28 @@ export default function DashboardPage() {
                 <div>
                   <label className="text-sm font-semibold text-surface-700 dark:text-surface-300 mb-3 block">Boshlang'ich Narx</label>
                   <div className="flex items-center gap-2">
-                    <input type="number" placeholder="Dan" className="w-full px-3 py-2 text-sm bg-surface-50 dark:bg-surface-950 border border-surface-200 dark:border-surface-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500" />
+                    <input type="number" placeholder="Dan" value={priceMin} onChange={e => setPriceMin(e.target.value)} className="w-full px-3 py-2 text-sm bg-surface-50 dark:bg-surface-950 border border-surface-200 dark:border-surface-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500" />
                     <span className="text-surface-400">-</span>
-                    <input type="number" placeholder="Gacha" className="w-full px-3 py-2 text-sm bg-surface-50 dark:bg-surface-950 border border-surface-200 dark:border-surface-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500" />
+                    <input type="number" placeholder="Gacha" value={priceMax} onChange={e => setPriceMax(e.target.value)} className="w-full px-3 py-2 text-sm bg-surface-50 dark:bg-surface-950 border border-surface-200 dark:border-surface-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500" />
                   </div>
                 </div>
 
                 <div>
                   <label className="text-sm font-semibold text-surface-700 dark:text-surface-300 mb-3 block">Soha / Kategoriya</label>
-                  <select className="w-full px-3 py-2 text-sm bg-surface-50 dark:bg-surface-950 border border-surface-200 dark:border-surface-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 text-surface-700 dark:text-surface-300">
-                    <option>Barcha sohalar</option>
-                    <option>IT va Dasturlash</option>
-                    <option>Qurilish va ta'mirlash</option>
-                    <option>Mebel va ofis jihozlari</option>
+                  <select value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)} className="w-full px-3 py-2 text-sm bg-surface-50 dark:bg-surface-950 border border-surface-200 dark:border-surface-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 text-surface-700 dark:text-surface-300">
+                    <option value="">Barcha sohalar</option>
+                    <option value="IT uskunalar">IT va Dasturlash</option>
+                    <option value="Qurilish">Qurilish va ta'mirlash</option>
+                    <option value="Mebel">Mebel va ofis jihozlari</option>
+                    <option value="Tibbiyot">Tibbiyot</option>
+                    <option value="Transport">Transport</option>
                   </select>
                 </div>
                 
-                <button className="w-full py-2.5 bg-surface-100 hover:bg-surface-200 dark:bg-surface-800 dark:hover:bg-surface-700 text-surface-700 dark:text-surface-200 text-sm font-semibold rounded-lg transition-colors">
+                <button 
+                  onClick={handleFilterApply}
+                  className="w-full py-2.5 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold rounded-lg transition-colors"
+                >
                   Filtrni qo'llash
                 </button>
               </div>
@@ -176,36 +257,61 @@ export default function DashboardPage() {
           {/* Main List */}
           <div className="flex-1">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-surface-900 dark:text-white">Tavsiya etilgan tenderlar</h2>
-              <button className="text-sm font-medium text-primary-600 dark:text-primary-400 hover:underline">Barchasini ko'rish</button>
+              <h2 className="text-xl font-bold text-surface-900 dark:text-white">Faol Tenderlar</h2>
+              <span className="text-sm text-surface-500">{tenders.length} ta natija</span>
             </div>
 
+            {isLoading && (
+              <div className="bg-white dark:bg-surface-900 rounded-2xl p-12 shadow-sm border border-surface-200 dark:border-surface-800 flex flex-col items-center justify-center">
+                <Loader2 className="w-10 h-10 text-primary-500 animate-spin mb-4" />
+                <p className="text-surface-500 font-medium">Tenderlar yuklanmoqda...</p>
+              </div>
+            )}
+
+            {error && (
+              <div className="bg-danger-50 dark:bg-danger-900/20 border border-danger-200 dark:border-danger-800 rounded-2xl p-6 flex items-center gap-4">
+                <AlertCircle className="w-6 h-6 text-danger-500 flex-shrink-0" />
+                <div>
+                  <p className="text-danger-700 dark:text-danger-300 font-semibold">{error}</p>
+                  <button onClick={() => fetchTenders()} className="text-sm text-danger-600 underline mt-1">Qaytadan urinib ko'rish</button>
+                </div>
+              </div>
+            )}
+
+            {!isLoading && !error && tenders.length === 0 && (
+              <div className="bg-white dark:bg-surface-900 rounded-2xl p-12 shadow-sm border border-surface-200 dark:border-surface-800 text-center">
+                <Search className="w-12 h-12 text-surface-300 mx-auto mb-4" />
+                <p className="text-surface-500 font-medium">Hozircha tenderlar topilmadi</p>
+                <p className="text-surface-400 text-sm mt-1">Scraper seed_tenders buyrug'ini ishga tushiring</p>
+              </div>
+            )}
+
             <div className="space-y-4">
-              {mockRecentTenders.map(tender => (
-                <div key={tender.id} className="bg-white dark:bg-surface-900 rounded-2xl p-6 shadow-sm border border-surface-200 dark:border-surface-800 hover:shadow-md transition-shadow group cursor-pointer" onClick={() => navigate(`/analysis?q=${tender.id}`)}>
+              {tenders.map(tender => {
+                const daysLeft = getDaysLeft(tender.deadline);
+                return (
+                <div key={tender.id} className="bg-white dark:bg-surface-900 rounded-2xl p-6 shadow-sm border border-surface-200 dark:border-surface-800 hover:shadow-md transition-shadow group cursor-pointer" onClick={() => handleTenderClick(tender)}>
                   <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                     <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
+                      <div className="flex items-center gap-3 mb-2 flex-wrap">
                         <span className="px-2.5 py-1 text-xs font-bold text-primary-700 dark:text-primary-300 bg-primary-100 dark:bg-primary-900/40 rounded-md border border-primary-200 dark:border-primary-800">
-                          Lot: #{tender.id}
+                          Lot: #{tender.lot_number}
                         </span>
                         <span className="px-2.5 py-1 text-xs font-medium text-surface-600 dark:text-surface-400 bg-surface-100 dark:bg-surface-800 rounded-md">
-                          {tender.platform}
+                          {getPlatformLabel(tender.platform_source)}
                         </span>
+                        {tender.category && (
+                          <span className="px-2 py-1 text-xs font-medium text-surface-600 dark:text-surface-300 bg-surface-50 dark:bg-surface-800 rounded border border-surface-200 dark:border-surface-700">
+                            {tender.category}
+                          </span>
+                        )}
                       </div>
                       <h3 className="text-lg font-bold text-surface-900 dark:text-white mb-2 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
                         {tender.title}
                       </h3>
-                      <div className="flex items-center gap-2 text-sm text-surface-500 dark:text-surface-400 mb-4">
+                      <div className="flex items-center gap-2 text-sm text-surface-500 dark:text-surface-400">
                         <Building2 className="w-4 h-4 flex-shrink-0" />
-                        <span>{tender.customer}</span>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {tender.tags.map(tag => (
-                          <span key={tag} className="px-2 py-1 text-xs font-medium text-surface-600 dark:text-surface-300 bg-surface-50 dark:bg-surface-800 rounded border border-surface-200 dark:border-surface-700">
-                            {tag}
-                          </span>
-                        ))}
+                        <span>{tender.buyer_name || 'Buyurtmachi nomi ko\'rsatilmagan'}</span>
                       </div>
                     </div>
 
@@ -213,13 +319,13 @@ export default function DashboardPage() {
                       <div className="text-left md:text-right">
                         <p className="text-xs text-surface-500 dark:text-surface-400 mb-1">Boshlang'ich narx</p>
                         <p className="text-xl font-black text-surface-900 dark:text-white tabular-nums">
-                          {tender.price}
+                          {formatMoney(tender.start_price)}
                         </p>
                       </div>
-                      <div className="flex items-center justify-between md:justify-end gap-6 w-full">
-                        <div className="flex items-center gap-1.5 text-sm text-danger-600 dark:text-danger-400 font-medium">
+                      <div className="flex items-center justify-between md:justify-end gap-6 w-full mt-3">
+                        <div className={`flex items-center gap-1.5 text-sm font-medium ${daysLeft <= 5 ? 'text-danger-600 dark:text-danger-400' : 'text-warning-600 dark:text-warning-400'}`}>
                           <Calendar className="w-4 h-4" />
-                          {tender.deadline}
+                          {daysLeft > 0 ? `${daysLeft} kun qoldi` : 'Muddati o\'tgan'}
                         </div>
                         <button className="px-4 py-2 bg-surface-100 dark:bg-surface-800 hover:bg-primary-50 dark:hover:bg-primary-900/30 text-surface-700 dark:text-white hover:text-primary-600 dark:hover:text-primary-400 text-sm font-semibold rounded-lg transition-colors border border-surface-200 dark:border-surface-700 hover:border-primary-300 dark:hover:border-primary-700">
                           Tahlil qilish
@@ -228,7 +334,7 @@ export default function DashboardPage() {
                     </div>
                   </div>
                 </div>
-              ))}
+              )})}
             </div>
 
           </div>

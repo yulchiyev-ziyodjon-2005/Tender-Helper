@@ -6,7 +6,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.filters import OrderingFilter, SearchFilter
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from .filters import TenderLotFilter
@@ -20,7 +20,7 @@ from .serializers import (
 
 class TenderListView(generics.ListAPIView):
     serializer_class = TenderLotSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
     filterset_class = TenderLotFilter
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     search_fields = ['title', 'buyer_name', 'lot_number']
@@ -34,11 +34,11 @@ class TenderListView(generics.ListAPIView):
 class TenderDetailView(generics.RetrieveAPIView):
     queryset = TenderLot.objects.all()
     serializer_class = TenderLotDetailSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def manual_tender_view(request):
     """
     POST /api/v1/tenders/manual/

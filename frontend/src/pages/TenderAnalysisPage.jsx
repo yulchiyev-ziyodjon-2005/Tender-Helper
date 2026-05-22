@@ -1,85 +1,142 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Loader2, AlertTriangle, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Loader2, AlertTriangle, ExternalLink, RotateCw } from 'lucide-react';
 import AITenderDashboard from '../components/analysis/AITenderDashboard';
 import SmartCalculator from '../components/analysis/SmartCalculator';
+import apiClient from '../api/client';
 
 export default function TenderAnalysisPage() {
   const [searchParams] = useSearchParams();
-  const query = searchParams.get('q');
+  const lotId = searchParams.get('lotId');     // UUID of the tender
+  const lotNumber = searchParams.get('lotNumber'); // lot_number string  
+  const freeQuery = searchParams.get('q');     // free text search from search bar
   const navigate = useNavigate();
 
   const [isLoading, setIsLoading] = useState(true);
+  const [analysisPhase, setAnalysisPhase] = useState('');
   const [error, setError] = useState(null);
   const [analysisData, setAnalysisData] = useState(null);
+  const [tenderData, setTenderData] = useState(null);
 
   useEffect(() => {
-    if (!query) {
+    if (!lotId && !lotNumber && !freeQuery) {
       navigate('/dashboard');
       return;
     }
+    runAnalysis();
+  }, [lotId, lotNumber, freeQuery]);
 
-    // Har qanday so'rov bo'lganda mock data qaytarishni simulyatsiya qilamiz
-    const fetchAnalysis = async () => {
-      setIsLoading(true);
-      setError(null);
-      
-      try {
-        // API chaqiruvini simulyatsiya qilish (1.5 soniya)
-        await new Promise(resolve => setTimeout(resolve, 1500));
+  const runAnalysis = async () => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      let tender = null;
+
+      // Step 1: Find the tender
+      if (lotId) {
+        // Direct UUID lookup
+        setAnalysisPhase('Tender ma\'lumotlari yuklanmoqda...');
+        const { data } = await apiClient.get(`/tenders/${lotId}/`);
+        tender = data;
+      } else {
+        // Search by lot_number or free text
+        const searchTerm = lotNumber || freeQuery;
+        setAnalysisPhase(`"${searchTerm}" qidirilmoqda...`);
+        const { data } = await apiClient.get(`/tenders/?search=${encodeURIComponent(searchTerm)}`);
+        const results = Array.isArray(data) ? data : (data.results || []);
         
-        // Mock data
-        setAnalysisData({
-          lotId: query.replace(/[^0-9]/g, '') || '24110012',
-          title: "Kompyuter texnikalari va server uskunalarini xarid qilish",
-          customer: "O'zbekiston Respublikasi Raqamli Texnologiyalar Vazirligi",
-          deadline: "2026-06-01",
-          startPrice: 1250000000,
-          currency: 'UZS',
-          platform: "xarid.uzex.uz",
-          aiMatchScore: 85,
-          redFlags: [
-            { id: 1, title: 'Yetkazib berish muddati', description: 'Yetkazib berish muddati atigi 5 ish kuni qilib belgilangan. Bu server uskunalari importi uchun juda xavfli.', level: 'high' },
-            { id: 2, title: 'Jarima (Penya)', description: 'Kechikish uchun kunlik penya 0.5% (qonunchilikda odatda 0.4% bo\'ladi).', level: 'high' },
-            { id: 3, title: 'To\'lov sharti', description: 'Oldindan to\'lov 15%, qolgan 85% ish tugagandan so\'ng. Aylanma mablag\'ingiz yetarliligiga ishonch hosil qiling.', level: 'medium' }
-          ],
-          requirements: [
-            "Barcha kompyuterlar kamida Core i7 13-avlod, 16GB RAM bo'lishi shart.",
-            "Server uskunalari xalqaro sifat sertifikatlariga ega bo'lishi kerak.",
-            "Kafolat muddati kamida 3 yil etib belgilanishi zarur."
-          ]
-        });
-      } catch (err) {
-        setError('Tahlil ma\'lumotlarini olishda xatolik yuz berdi.');
-      } finally {
-        setIsLoading(false);
+        if (results.length === 0) {
+          setError(`"${searchTerm}" bo'yicha tender topilmadi. Avval bazaga tender qo'shing.`);
+          setIsLoading(false);
+          return;
+        }
+        tender = results[0];
       }
-    };
 
-    fetchAnalysis();
-  }, [query, navigate]);
+      setTenderData(tender);
+
+      // Step 2: Run AI Analysis via backend
+      setAnalysisPhase('AI hujjatlarni tahlil qilmoqda...');
+      const { data: analysis } = await apiClient.post('/analysis/start/', {
+        lot_id: tender.id,
+      });
+      
+      setAnalysisData(analysis);
+    } catch (err) {
+      console.error('Analysis error:', err);
+      const msg = err.response?.data?.message || err.response?.data?.error || err.message;
+      setError(`Tahlil jarayonida xatolik: ${msg}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-surface-50 dark:bg-surface-950 flex flex-col items-center justify-center p-4">
-        <Loader2 className="w-12 h-12 text-primary-500 animate-spin mb-4" />
-        <h2 className="text-xl font-bold text-surface-900 dark:text-white mb-2">AI hujjatlarni tahlil qilmoqda...</h2>
-        <p className="text-surface-500 text-center max-w-md">Gemini AI tizimi {query} bo'yicha texnik topshiriqlarni va yashirin shartlarni izlamoqda.</p>
+        <div className="relative mb-6">
+          <div className="w-20 h-20 rounded-full border-4 border-primary-100 dark:border-primary-900/30"></div>
+          <Loader2 className="w-20 h-20 text-primary-500 animate-spin absolute top-0 left-0" />
+        </div>
+        <h2 className="text-xl font-bold text-surface-900 dark:text-white mb-2">AI tahlil jarayoni</h2>
+        <p className="text-surface-500 text-center max-w-md">{analysisPhase}</p>
+        <div className="mt-6 flex gap-2">
+          {['Hujjatlar', 'Talablar', 'Red Flags', 'Xulosa'].map((step, i) => (
+            <div key={step} className="flex items-center gap-2">
+              <div className={`w-2.5 h-2.5 rounded-full ${i === 0 ? 'bg-primary-500 animate-pulse' : 'bg-surface-300 dark:bg-surface-700'}`}></div>
+              <span className={`text-xs ${i === 0 ? 'text-primary-600 font-medium' : 'text-surface-400'}`}>{step}</span>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
 
-  if (error || !analysisData) {
+  if (error) {
     return (
       <div className="min-h-screen bg-surface-50 dark:bg-surface-950 flex flex-col items-center justify-center p-4">
         <AlertTriangle className="w-12 h-12 text-danger-500 mb-4" />
-        <h2 className="text-xl font-bold text-surface-900 dark:text-white mb-4">{error || "Ma'lumot topilmadi"}</h2>
-        <button onClick={() => navigate('/dashboard')} className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700">
-          Orqaga qaytish
-        </button>
+        <h2 className="text-xl font-bold text-surface-900 dark:text-white mb-2">Xatolik</h2>
+        <p className="text-surface-500 text-center max-w-md mb-6">{error}</p>
+        <div className="flex gap-3">
+          <button onClick={() => navigate('/dashboard')} className="px-6 py-2.5 bg-surface-200 dark:bg-surface-800 text-surface-700 dark:text-white rounded-lg hover:bg-surface-300 dark:hover:bg-surface-700 font-medium">
+            Orqaga
+          </button>
+          <button onClick={runAnalysis} className="px-6 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-medium flex items-center gap-2">
+            <RotateCw className="w-4 h-4" /> Qayta urinish
+          </button>
+        </div>
       </div>
     );
   }
+
+  if (!analysisData || !tenderData) return null;
+
+  // Transform backend response to component format
+  const displayData = {
+    lotId: tenderData.lot_number,
+    title: tenderData.title,
+    customer: tenderData.buyer_name,
+    deadline: tenderData.deadline,
+    startPrice: parseFloat(tenderData.start_price),
+    currency: 'UZS',
+    platform: getPlatformLabel(tenderData.platform_source),
+    aiMatchScore: analysisData.eligibility_score,
+    summary: analysisData.summary_text,
+    redFlags: (analysisData.red_flags || []).map((flag, i) => ({
+      id: i + 1,
+      title: flag.title,
+      description: flag.reason || flag.description,
+      level: flag.level === 'blocker' ? 'high' : flag.level === 'warning' ? 'medium' : 'low',
+      recommendation: flag.recommendation,
+    })),
+    requirements: (analysisData.requirements || []).map(r => r.plain || r.original || r),
+    missingDocuments: analysisData.missing_documents || [],
+    standards: analysisData.standards || [],
+    decision: analysisData.decision || {},
+    analysisId: analysisData.id,
+  };
 
   return (
     <div className="min-h-screen bg-surface-50 dark:bg-surface-950 pb-12">
@@ -94,20 +151,22 @@ export default function TenderAnalysisPage() {
               <ArrowLeft className="w-5 h-5" />
             </button>
             <div className="flex flex-col">
-              <span className="text-sm font-medium text-surface-500 dark:text-surface-400">Lot: #{analysisData.lotId}</span>
+              <span className="text-sm font-medium text-surface-500 dark:text-surface-400">Lot: #{displayData.lotId}</span>
               <h1 className="text-base font-bold text-surface-900 dark:text-white truncate max-w-md md:max-w-xl">
-                {analysisData.title}
+                {displayData.title}
               </h1>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <a 
-              href={`https://${analysisData.platform}/purchase/competition/detail/${analysisData.lotId}`}
-              target="_blank" rel="noopener noreferrer"
-              className="hidden sm:inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary-600 bg-primary-50 dark:bg-primary-900/30 rounded-lg hover:bg-primary-100 transition-colors"
-            >
-              Manbaga o'tish <ExternalLink className="w-4 h-4" />
-            </a>
+            {tenderData.raw_portal_url && (
+              <a 
+                href={tenderData.raw_portal_url}
+                target="_blank" rel="noopener noreferrer"
+                className="hidden sm:inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary-600 bg-primary-50 dark:bg-primary-900/30 rounded-lg hover:bg-primary-100 transition-colors"
+              >
+                Manbaga o'tish <ExternalLink className="w-4 h-4" />
+              </a>
+            )}
           </div>
         </div>
       </header>
@@ -118,13 +177,13 @@ export default function TenderAnalysisPage() {
           
           {/* Left Column: AI Analysis */}
           <div className="lg:col-span-2 space-y-8">
-            <AITenderDashboard data={analysisData} />
+            <AITenderDashboard data={displayData} />
           </div>
 
           {/* Right Column: Smart Calculator */}
           <div className="lg:col-span-1">
             <div className="sticky top-24">
-              <SmartCalculator tenderPrice={analysisData.startPrice} />
+              <SmartCalculator tenderPrice={displayData.startPrice} analysisId={displayData.analysisId} />
             </div>
           </div>
 
@@ -132,4 +191,15 @@ export default function TenderAnalysisPage() {
       </main>
     </div>
   );
+}
+
+function getPlatformLabel(source) {
+  const map = {
+    'xarid_uzex': 'xarid.uzex.uz',
+    'dxarid_uzex': 'dxarid.uzex.uz',
+    'exarid_uzex': 'exarid.uzex.uz',
+    'e_auksion': 'e-auksion.uz',
+    'manual': "Qo'lda kiritilgan",
+  };
+  return map[source] || source;
 }

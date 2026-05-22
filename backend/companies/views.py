@@ -1,6 +1,6 @@
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from .models import CompanyProfile
@@ -12,7 +12,7 @@ def _get_current_profile(user):
 
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def onboarding_view(request):
     """
     POST /api/v1/company/onboarding/
@@ -30,7 +30,7 @@ def onboarding_view(request):
 
 
 @api_view(['GET', 'PATCH'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def profile_view(request):
     """
     GET/PATCH /api/v1/company/profile/

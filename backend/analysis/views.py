@@ -2,7 +2,7 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from companies.models import CompanyProfile
@@ -130,7 +130,7 @@ def _run_rule_based_analysis(analysis, tender_text):
 
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def start_analysis_view(request):
     serializer = StartAnalysisSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
@@ -164,7 +164,7 @@ def start_analysis_view(request):
 
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def analysis_status_view(request, pk):
     analysis = get_object_or_404(
         AITenderAnalysis.objects.filter(company__user=request.user),
@@ -174,7 +174,7 @@ def analysis_status_view(request, pk):
 
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def analysis_result_view(request, pk):
     analysis = get_object_or_404(
         AITenderAnalysis.objects.filter(company__user=request.user),
@@ -184,7 +184,7 @@ def analysis_result_view(request, pk):
 
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def analysis_history_view(request):
     analyses = AITenderAnalysis.objects.filter(company__user=request.user).select_related(
         'company',
@@ -195,7 +195,7 @@ def analysis_history_view(request):
 
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def calculate_view(request, pk):
     analysis = get_object_or_404(
         AITenderAnalysis.objects.filter(company__user=request.user),
