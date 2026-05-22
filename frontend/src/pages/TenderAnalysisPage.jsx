@@ -59,7 +59,7 @@ export default function TenderAnalysisPage() {
       // Step 2: Run AI Analysis via backend
       setAnalysisPhase('AI hujjatlarni tahlil qilmoqda...');
       const { data: analysis } = await apiClient.post('/analysis/start/', {
-        tender_id: tender.id
+        lot_id: tender.id
       });
 
       setAnalysisData(analysis);
