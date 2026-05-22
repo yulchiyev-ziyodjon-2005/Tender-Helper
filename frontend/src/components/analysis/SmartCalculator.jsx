@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Calculator, AlertTriangle, TrendingDown, TrendingUp, Info } from 'lucide-react';
+import { Calculator, AlertTriangle, TrendingDown, TrendingUp, Info, ExternalLink } from 'lucide-react';
 import apiClient from '../../api/client';
 
 export default function SmartCalculator({ tenderPrice = 0, analysisId }) {
@@ -99,7 +99,7 @@ export default function SmartCalculator({ tenderPrice = 0, analysisId }) {
               type="text"
               value={cost}
               onChange={handleCostChange}
-              placeholder="0"
+              placeholder="Masalan: 1 500 000"
               className="w-full px-4 py-3 bg-surface-50 dark:bg-surface-950 border border-surface-200 dark:border-surface-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 font-bold text-lg tabular-nums text-surface-900 dark:text-white"
             />
             <span className="absolute right-4 top-1/2 -translate-y-1/2 text-surface-400 font-medium">UZS</span>
@@ -149,7 +149,7 @@ export default function SmartCalculator({ tenderPrice = 0, analysisId }) {
             </div>
           </div>
 
-          <div className="bg-surface-900 text-white rounded-xl p-4 flex justify-between items-center">
+          <div className="bg-surface-900 text-white rounded-xl p-4 flex justify-between items-center mb-4">
             <div>
               <p className="text-surface-400 text-xs mb-1">Stop-Loss (Minimum narx)</p>
               <p className="font-bold text-lg">{formatMoney(results.stopLoss)}</p>
@@ -158,6 +158,15 @@ export default function SmartCalculator({ tenderPrice = 0, analysisId }) {
               <div className="w-3 h-3 rounded-full bg-danger-500 animate-pulse"></div>
             </div>
           </div>
+
+          <a 
+            href="https://xarid.uzex.uz/" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="w-full flex items-center justify-center gap-2 bg-primary-600 hover:bg-primary-700 text-white font-bold py-4 px-6 rounded-xl transition-colors shadow-lg shadow-primary-500/30"
+          >
+            Tenderda ishtirok etish <ExternalLink className="w-5 h-5" />
+          </a>
         </div>
 
       </div>
