@@ -15,6 +15,7 @@ import OnboardingPage from '../pages/OnboardingPage';
 import NotFoundPage from '../pages/NotFoundPage';
 import GoogleCallbackPage from '../pages/GoogleCallbackPage';
 import TenderAnalysisPage from '../pages/TenderAnalysisPage';
+import SettingsPage from '../pages/SettingsPage';
 
 /**
  * Himoyalangan yo'nalish — faqat autentifikatsiya qilingan foydalanuvchilar
@@ -68,6 +69,15 @@ export default function AppRouter() {
           element={
             <PrivateRoute>
               <TenderAnalysisPage />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/settings"
+          element={
+            <PrivateRoute>
+              <SettingsPage />
             </PrivateRoute>
           }
         />

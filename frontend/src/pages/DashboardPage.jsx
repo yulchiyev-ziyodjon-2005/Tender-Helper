@@ -48,6 +48,13 @@ export default function DashboardPage() {
               <CheckCircle2 className="w-4 h-4 text-success-500" /> Bepul Tarif
             </span>
             <button
+              onClick={() => navigate('/settings')}
+              className="p-2 text-surface-500 hover:text-primary-600 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+              title="Sozlamalar"
+            >
+              <Building2 className="w-5 h-5" />
+            </button>
+            <button
               onClick={logout}
               className="p-2 text-surface-500 hover:text-danger-500 rounded-lg hover:bg-danger-50 dark:hover:bg-danger-500/10 transition-colors"
               title="Chiqish"
