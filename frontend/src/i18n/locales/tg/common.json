@@ -1,0 +1,82 @@
+{
+  "nav": {
+    "dashboard": "Панели идоракунӣ",
+    "tenders": "Тендерҳо",
+    "analysis": "Таҳлили AI",
+    "calculator": "Калкулятор",
+    "pricing": "Тарифҳо",
+    "profile": "Профил",
+    "team": "Гурӯҳ",
+    "competitors": "Рақибон",
+    "settings": "Танзимот",
+    "logout": "Баромадан",
+    "dark_mode": "Ҳолати торик",
+    "light_mode": "Ҳолати равшан",
+    "language": "Забон"
+  },
+  "actions": {
+    "save": "Нигоҳ доштан",
+    "cancel": "Бекор кардан",
+    "delete": "Нест кардан",
+    "edit": "Таҳрир кардан",
+    "search": "Ҷустуҷӯ",
+    "filter": "Филтр",
+    "reset": "Бозсозӣ",
+    "analyze": "Таҳлил кардан",
+    "calculate": "Ҳисоб кардан",
+    "back": "Бозгашт",
+    "next": "Оянда",
+    "submit": "Фиристодан",
+    "confirm": "Тасдиқ кардан",
+    "close": "Пӯшидан",
+    "view_details": "Муфассал дидан",
+    "download": "Зеркашӣ",
+    "upgrade": "Тарифро беҳтар кунед",
+    "loading": "Бор мешавад...",
+    "try_again": "Аз нав кӯшиш кунед"
+  },
+  "status": {
+    "active": "Фаъол",
+    "inactive": "Ғайрифаъол",
+    "pending": "Дар интизорӣ",
+    "completed": "Анҷом ёфт",
+    "failed": "Хатогӣ",
+    "expired": "Мӯҳлаташ гузашт"
+  },
+  "messages": {
+    "welcome": "Хуш омадед!",
+    "welcome_back": "Бо бозгашти шумо!",
+    "no_data": "Маълумот ёфт нашуд",
+    "no_results": "Ҳеҷ чиз ёфт нашуд",
+    "saved_success": "Бомуваффақият нигоҳ дошта шуд",
+    "error_occurred": "Хатогӣ рух дод",
+    "network_error": "Пайвасти интернет нест",
+    "api_status_ok": "API Status: OK"
+  },
+  "auth": {
+    "login_title": "Вуруд",
+    "phone_label": "Рақами телефон",
+    "phone_placeholder": "90 123 45 67",
+    "send_otp": "Гирифтани рамзи SMS",
+    "otp_title": "Рамзро ворид кунед",
+    "verify": "Тасдиқ кардан",
+    "or": "ё ки",
+    "google_login": "Тавассути Google ворид шавед",
+    "welcome_subtitle": "AI Тендер Ментор — дар тендерҳо ғолиб шавед"
+  },
+  "dashboard": {
+    "title": "Панели идоракунӣ",
+    "active_tenders": "Тендерҳои фаъол",
+    "my_analyses": "Таҳлилҳои ман",
+    "search_tenders": "Ҷустуҷӯи тендерҳо..."
+  },
+  "analysis": {
+    "title": "Таҳлили AI тендер",
+    "start_analysis": "Оғоз кардани таҳлил",
+    "disclaimer": "⚠️ Ин таҳлил аз ҷониби зеҳни сунъӣ тайёр шудааст ва маслиҳати ҳуқуқӣ намебошад."
+  },
+  "errors": {
+    "required": "Ин майдон ҳатмист",
+    "invalid_phone": "Рақами телефон нодуруст аст"
+  }
+}

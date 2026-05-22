@@ -1,0 +1,82 @@
+{
+  "nav": {
+    "dashboard": "Басқарыў панели",
+    "tenders": "Тендерлер",
+    "analysis": "AI Талдаў",
+    "calculator": "Калькулятор",
+    "pricing": "Тарифлер",
+    "profile": "Профиль",
+    "team": "Топар",
+    "competitors": "Бәсекелеслер",
+    "settings": "Sazlamalar",
+    "logout": "Шығыў",
+    "dark_mode": "Қараңғы режим",
+    "light_mode": "Жарық режим",
+    "language": "Тил"
+  },
+  "actions": {
+    "save": "Сақлаў",
+    "cancel": "Бийкар етиў",
+    "delete": "Өшириў",
+    "edit": "Өзгертиў",
+    "search": "Излеў",
+    "filter": "Фильтр",
+    "reset": "Тазалаў",
+    "analyze": "Талдаў",
+    "calculate": "Есаплаў",
+    "back": "Артқа",
+    "next": "Кейинги",
+    "submit": "Жибериў",
+    "confirm": "Тастыйықлаў",
+    "close": "Жабыў",
+    "view_details": "Толық көриў",
+    "download": "Жүклеп алыў",
+    "upgrade": "Тарифти жақсылаў",
+    "loading": "Жүкленмекте...",
+    "try_again": "Қайта урыныў"
+  },
+  "status": {
+    "active": "Актив",
+    "inactive": "Актив емес",
+    "pending": "Күтилмекте",
+    "completed": "Тамамланды",
+    "failed": "Қәтелик",
+    "expired": "Мүддети өтти"
+  },
+  "messages": {
+    "welcome": "Хош келдиңиз!",
+    "welcome_back": "Қайтқаныңыз бенен!",
+    "no_data": "Мағлыўмат табылмады",
+    "no_results": "Ҳеш нәрсе табылмады",
+    "saved_success": "Сәтли сақланды",
+    "error_occurred": "Қәтелик жүз берди",
+    "network_error": "Интернет байланысы жоқ",
+    "api_status_ok": "API Status: OK"
+  },
+  "auth": {
+    "login_title": "Кириў",
+    "phone_label": "Телефон номери",
+    "phone_placeholder": "90 123 45 67",
+    "send_otp": "SMS код алыў",
+    "otp_title": "Кодты киритиң",
+    "verify": "Тастыйықлаў",
+    "or": "яки",
+    "google_login": "Google арқалы кириў",
+    "welcome_subtitle": "AI Тендер Ментор — тендерде жеңимпаз болың"
+  },
+  "dashboard": {
+    "title": "Басқарыў панели",
+    "active_tenders": "Актив тендерлер",
+    "my_analyses": "Талдаўларым",
+    "search_tenders": "Тендерлерди излеў..."
+  },
+  "analysis": {
+    "title": "AI Тендер Талдаўы",
+    "start_analysis": "Талдаўды баслаў",
+    "disclaimer": "⚠️ Бул талдаў сүнний интеллект тәрепинен таярланған ҳәм ҳуқықый мәсләҳат есапланбайды."
+  },
+  "errors": {
+    "required": "Бул жол толтырылыўы шәрт",
+    "invalid_phone": "Қәте телефон номери"
+  }
+}
