@@ -21,21 +21,24 @@ def _current_company(user, company_id=None):
     from django.contrib.auth import get_user_model
     User = get_user_model()
     
-    try:
-        # Check if user is a valid User instance by trying to get its id
-        user_id = getattr(user, 'id', None)
-        if not user_id or not getattr(user, 'is_authenticated', False):
-            raise ValueError("Not authenticated")
-    except Exception:
-        # Demo mode fallback
-        demo_user = User.objects.filter(email='demo@tenderhelper.uz').first()
-        if demo_user:
-            return CompanyProfile.objects.filter(user=demo_user).first()
-        return None
-        
-    if company_id:
-        return CompanyProfile.objects.filter(id=company_id, user=user).first()
-    return CompanyProfile.objects.filter(user=user).first()
+    # Faqat Demo / Mock rejim uchun:
+    # Agar foydalanuvchi tizimga kirmagan bo'lsa (yoki tokenni mock qilib yuborsak), 
+    # shunchaki "TenderHelper Demo MCHJ" degan mock kompaniyani qaytaradi.
+    demo_user, _ = User.objects.get_or_create(
+        username='demo',
+        defaults={'email': 'demo@tenderhelper.uz'}
+    )
+    demo_company, _ = CompanyProfile.objects.get_or_create(
+        user=demo_user,
+        defaults={
+            'company_name': 'TenderHelper Demo MCHJ',
+            'stir': '123456789',
+            'company_type': 'mchj',
+            'industry': 'IT Dasturlash',
+            'has_vat': True
+        }
+    )
+    return demo_company
 
 
 def _collect_tender_text(tender, additional_text=''):

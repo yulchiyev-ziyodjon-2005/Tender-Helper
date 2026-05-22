@@ -1,14 +1,17 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link } from 'react-router-dom';
-import { ArrowLeft, Phone, ShieldCheck } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { ArrowLeft, Phone, ShieldCheck, PlayCircle } from 'lucide-react';
 import GoogleLoginButton from '../components/auth/GoogleLoginButton';
 import OTPVerification from '../components/auth/OTPVerification';
 import LanguageSwitcher from '../components/ui/LanguageSwitcher';
 import ThemeToggle from '../components/ui/ThemeToggle';
+import useAuthStore from '../store/authStore';
 
 export default function LoginPage() {
+  const navigate = useNavigate();
+  const login = useAuthStore(state => state.login);
   const { t } = useTranslation();
   const [phoneNumber, setPhoneNumber] = useState('');
   const [otpSentTo, setOtpSentTo] = useState('');
@@ -186,6 +189,18 @@ export default function LoginPage() {
                   </div>
 
                   <GoogleLoginButton disabled={isLoading} />
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      login({ access: 'demo_token', refresh: 'demo_token' }, { name: 'Demo User', is_mock: true });
+                      navigate('/dashboard');
+                    }}
+                    className="w-full mt-4 py-3 px-4 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-primary-500/30 flex justify-center items-center gap-2"
+                  >
+                    <PlayCircle className="w-5 h-5" />
+                    Demo rejimida kirish (Taqdimot uchun)
+                  </button>
 
                   {googleError && (
                     <p className="text-sm text-danger-500 mt-4 bg-danger-50 dark:bg-danger-500/10 p-3 rounded-lg border border-danger-100 dark:border-danger-500/20">
