@@ -32,7 +32,7 @@ export default function LandingPage() {
       deadline: "2026-06-01",
       platform: "xarid.uzex.uz",
       tags: ["IT", "Uskunalar"],
-      image: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=600&q=80"
+      image: "https://images.unsplash.com/photo-1542393545-10f5cde2c810?auto=format&fit=crop&w=600&q=80"
     },
     {
       id: "24110085",
@@ -42,7 +42,7 @@ export default function LandingPage() {
       deadline: "2026-05-28",
       platform: "exarid.uzex.uz",
       tags: ["Mebel", "Korporativ"],
-      image: "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=600&q=80"
+      image: "https://images.unsplash.com/photo-1505843490538-5133c6c7d0e1?auto=format&fit=crop&w=600&q=80"
     },
     {
       id: "24110103",
@@ -52,7 +52,7 @@ export default function LandingPage() {
       deadline: "2026-06-15",
       platform: "xarid.uzex.uz",
       tags: ["IT", "Xizmatlar"],
-      image: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=600&q=80"
+      image: "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=600&q=80"
     }
   ];
 
@@ -104,15 +104,15 @@ export default function LandingPage() {
               key={currentImageIndex}
               src={heroImages[currentImageIndex]}
               initial={{ opacity: 0, scale: 1.05 }}
-              animate={{ opacity: 0.15, scale: 1 }}
+              animate={{ opacity: 0.3, scale: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 1.5 }}
-              className="absolute inset-0 w-full h-full object-cover mix-blend-luminosity dark:opacity-[0.05]"
+              className="absolute inset-0 w-full h-full object-cover dark:opacity-20"
               alt="Hero Background"
             />
           </AnimatePresence>
           {/* Gradient Overlay for Readability */}
-          <div className="absolute inset-0 bg-gradient-to-b from-surface-50/80 via-surface-50/90 to-surface-50 dark:from-surface-950/80 dark:via-surface-950/90 dark:to-surface-950"></div>
+          <div className="absolute inset-0 bg-gradient-to-b from-surface-50/70 via-surface-50/90 to-surface-50 dark:from-surface-950/70 dark:via-surface-950/90 dark:to-surface-950"></div>
         </div>
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -121,14 +121,6 @@ export default function LandingPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 text-sm font-medium mb-6 border border-primary-100 dark:border-primary-800 backdrop-blur-sm">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-primary-500"></span>
-              </span>
-              Gemini AI 2.5 Flash bilan ishlaydi
-            </span>
-
             <h1 className="text-5xl md:text-7xl font-extrabold text-surface-900 dark:text-white tracking-tight mb-8">
               Tenderlarda <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-600 to-success-500">AI Mentor</span> orqali yutish ehtimolini oshiring
             </h1>
@@ -316,7 +308,9 @@ export default function LandingPage() {
               <span className="text-white font-medium">TenderHelper AI</span>
             </div>
             <p>© 2026 TenderHelper. Barcha huquqlar himoyalangan.</p>
-            <div className="flex gap-4">
+            <div className="flex flex-wrap gap-4 justify-center">
+              <a href="#" className="hover:text-white transition-colors">Biz haqimizda</a>
+              <a href="#" className="hover:text-white transition-colors">Bog'lanish</a>
               <a href="#" className="hover:text-white transition-colors">Maxfiylik Siyosati</a>
               <a href="#" className="hover:text-white transition-colors">Foydalanish Shartlari</a>
             </div>
