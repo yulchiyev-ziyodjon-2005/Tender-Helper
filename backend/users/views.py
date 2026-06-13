@@ -16,6 +16,8 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from companies.models import CompanyProfile
+from companies.serializers import CompanyProfileSerializer
 from .models import CustomUser
 from .serializers import (
     SendOTPSerializer,
@@ -41,6 +43,20 @@ def _get_tokens_for_user(user):
     return {
         'access': str(refresh.access_token),
         'refresh': str(refresh),
+    }
+
+
+def _get_primary_company(user):
+    return CompanyProfile.objects.filter(user=user).order_by('-created_at').first()
+
+
+def _auth_payload(user, is_new_user):
+    company = _get_primary_company(user)
+    return {
+        'tokens': _get_tokens_for_user(user),
+        'user': UserProfileSerializer(user).data,
+        'company': CompanyProfileSerializer(company).data if company else None,
+        'is_new_user': is_new_user,
     }
 
 
@@ -170,15 +186,7 @@ def verify_otp_view(request):
     if created:
         logger.info(f"New user registered via OTP: {phone_number}")
 
-    # JWT token qaytarish
-    tokens = _get_tokens_for_user(user)
-    profile = UserProfileSerializer(user).data
-
-    return Response({
-        'tokens': tokens,
-        'user': profile,
-        'is_new_user': created,  # Frontend — onboarding ko'rsatish uchun
-    }, status=status.HTTP_200_OK)
+    return Response(_auth_payload(user, created), status=status.HTTP_200_OK)
 
 
 # ══════════════════════════════════════════════════
@@ -217,15 +225,7 @@ def google_auth_view(request):
     if created:
         logger.info(f"New user registered via Google: {google_user['email']}")
 
-    # JWT token
-    tokens = _get_tokens_for_user(user)
-    profile = UserProfileSerializer(user).data
-
-    return Response({
-        'tokens': tokens,
-        'user': profile,
-        'is_new_user': created,
-    }, status=status.HTTP_200_OK)
+    return Response(_auth_payload(user, created), status=status.HTTP_200_OK)
 
 
 @api_view(['GET'])
@@ -331,14 +331,7 @@ def email_register_view(request):
     
     logger.info(f"New user registered via Email: {user.email}")
     
-    tokens = _get_tokens_for_user(user)
-    profile = UserProfileSerializer(user).data
-    
-    return Response({
-        'tokens': tokens,
-        'user': profile,
-        'is_new_user': True,
-    }, status=status.HTTP_201_CREATED)
+    return Response(_auth_payload(user, True), status=status.HTTP_201_CREATED)
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
@@ -350,14 +343,14 @@ def email_login_view(request):
     serializer = EmailLoginSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
     
-    email = serializer.validated_data['email']
+    email = serializer.validated_data['email'].lower()
     password = serializer.validated_data['password']
     
     # Authenticate (uses phone or email depending on backend, but we need email auth)
     # By default, Django's authenticate uses the USERNAME_FIELD. 
     # Let's handle it manually if custom auth backend is not fully setup for email.
     try:
-        user = CustomUser.objects.get(email=email)
+        user = CustomUser.objects.get(email__iexact=email)
         if not user.check_password(password):
             return Response({'error': 'invalid_credentials', 'message': 'Email yoki parol noto\'g\'ri'}, status=status.HTTP_400_BAD_REQUEST)
     except CustomUser.DoesNotExist:
@@ -366,14 +359,7 @@ def email_login_view(request):
     if not user.is_active:
         return Response({'error': 'inactive_user', 'message': 'Foydalanuvchi bloklangan'}, status=status.HTTP_403_FORBIDDEN)
         
-    tokens = _get_tokens_for_user(user)
-    profile = UserProfileSerializer(user).data
-    
-    return Response({
-        'tokens': tokens,
-        'user': profile,
-        'is_new_user': False,
-    }, status=status.HTTP_200_OK)
+    return Response(_auth_payload(user, False), status=status.HTTP_200_OK)
 
 
 # ══════════════════════════════════════════════════

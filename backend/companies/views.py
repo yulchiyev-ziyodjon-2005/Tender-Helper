@@ -1,6 +1,6 @@
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from .models import CompanyProfile
@@ -12,7 +12,7 @@ def _get_current_profile(user):
 
 
 @api_view(['POST'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def onboarding_view(request):
     """
     POST /api/v1/company/onboarding/
@@ -30,7 +30,7 @@ def onboarding_view(request):
 
 
 @api_view(['GET', 'PATCH'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def profile_view(request):
     """
     GET/PATCH /api/v1/company/profile/
@@ -38,7 +38,7 @@ def profile_view(request):
     """
     profile = _get_current_profile(request.user)
 
-    if profile is None:
+    if profile is None and request.method == 'GET':
         return Response(
             {
                 'error': 'profile_not_found',
@@ -50,7 +50,11 @@ def profile_view(request):
     if request.method == 'GET':
         return Response(CompanyProfileSerializer(profile).data)
 
-    serializer = CompanyProfileSerializer(profile, data=request.data, partial=True)
+    serializer = CompanyProfileSerializer(
+        profile,
+        data=request.data,
+        partial=profile is not None,
+    )
     serializer.is_valid(raise_exception=True)
-    serializer.save()
-    return Response(serializer.data)
+    serializer.save(user=request.user)
+    return Response(serializer.data, status=status.HTTP_200_OK if profile else status.HTTP_201_CREATED)

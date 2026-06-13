@@ -20,6 +20,7 @@ load_dotenv(BASE_DIR.parent / '.env')
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-dev-key-change-in-production')
 DEBUG = os.getenv('DEBUG', 'True').lower() in ('true', '1', 'yes')
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,testserver').split(',')
+DEMO_MODE = os.getenv('DEMO_MODE', 'False').lower() in ('true', '1', 'yes')
 
 # ──────────────── Application Definition ────────────────
 DJANGO_APPS = [
@@ -58,10 +59,15 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'core.demo_middleware.DemoUserMiddleware',               # Demo mode
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+if DEMO_MODE:
+    MIDDLEWARE.insert(
+        MIDDLEWARE.index('django.contrib.messages.middleware.MessageMiddleware'),
+        'core.demo_middleware.DemoUserMiddleware',
+    )
 
 # ──────────────── URL Configuration ────────────────
 ROOT_URLCONF = 'core.urls'
@@ -137,7 +143,7 @@ REST_FRAMEWORK = {
 
     # Permissions — default: authenticated only
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.AllowAny',
+        'rest_framework.permissions.IsAuthenticated',
     ],
 
     # Throttling (Rate Limiting)
