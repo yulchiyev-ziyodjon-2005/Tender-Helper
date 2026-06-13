@@ -106,7 +106,8 @@ def _run_rule_based_analysis(analysis, tender_text):
     """
     
     try:
-        url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyA7TUJwcdJtw_S9IHEPZaXsEQW3uq8tbZ4"
+        api_key = settings.GEMINI_API_KEY
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
         payload = {
             "contents": [{"parts": [{"text": prompt}]}],
             "generationConfig": {
