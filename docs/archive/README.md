@@ -4,7 +4,14 @@ Bu katalogdagi fayllar TenderHelper loyihasining oldingi reja va texnik
 topshiriqlaridir. Ular tarixiy kontekst uchun saqlanadi va amaldagi talablar
 manbasi hisoblanmaydi.
 
-Canonical strategik va texnik hujjat: [`../../Plan.md`](../../Plan.md).
+Amaldagi hujjatlar:
+
+- canonical strategiya: [`../../Plan.md`](../../Plan.md);
+- bajarilish rejasi: [`../../IMPLEMENTATION_PLAN.md`](../../IMPLEMENTATION_PLAN.md);
+- target UI/UX: [`../../DESIGN.md`](../../DESIGN.md);
+- amaldagi API snapshoti: [`../API.md`](../API.md).
+
+Arxivdagi bir xil nomli fayllar amaldagi hujjat emas.
 
 Arxiv tarkibi:
 

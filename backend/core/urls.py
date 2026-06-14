@@ -28,10 +28,30 @@ def health_check(request):
 # ──────────────── API v1 URL Patterns ────────────────
 api_v1_patterns = [
     path('auth/', include('users.urls')),
-    path('company/', include('companies.urls')),
+    path(
+        'company/',
+        include(('companies.urls', 'companies'), namespace='companies-legacy'),
+    ),
+    path(
+        'companies/',
+        include(('companies.urls', 'companies'), namespace='companies'),
+    ),
     path('tenders/', include('tenders.urls')),
     path('analysis/', include('analysis.urls')),
-    path('subscription/', include('subscriptions.urls')),
+    path(
+        'subscription/',
+        include(
+            ('subscriptions.urls', 'subscriptions'),
+            namespace='subscriptions-legacy',
+        ),
+    ),
+    path(
+        'subscriptions/',
+        include(
+            ('subscriptions.urls', 'subscriptions'),
+            namespace='subscriptions',
+        ),
+    ),
     path('team/', include('teams.urls')),
     path('competitors/', include('competitors.urls')),
 ]

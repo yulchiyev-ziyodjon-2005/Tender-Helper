@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Loader2, AlertTriangle, ExternalLink, RotateCw } from 'lucide-react';
 import AITenderDashboard from '../components/analysis/AITenderDashboard';
@@ -19,7 +19,7 @@ export default function TenderAnalysisPage() {
   const [tenderData, setTenderData] = useState(null);
   const [loadingStep, setLoadingStep] = useState(0);
 
-  const runAnalysis = async () => {
+  const runAnalysis = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     setLoadingStep(0);
@@ -72,15 +72,16 @@ export default function TenderAnalysisPage() {
       clearInterval(progressInterval);
       setIsLoading(false);
     }
-  };
+  }, [freeQuery, lotId, lotNumber]);
 
   useEffect(() => {
     if (!lotId && !lotNumber && !freeQuery) {
       navigate('/dashboard');
       return;
     }
-    runAnalysis();
-  }, [lotId, lotNumber, freeQuery]);
+    const analysisTimer = setTimeout(runAnalysis, 0);
+    return () => clearTimeout(analysisTimer);
+  }, [freeQuery, lotId, lotNumber, navigate, runAnalysis]);
 
   if (isLoading) {
     const steps = ['Qidiruv', 'Hujjatlar', 'Red Flags', 'Xulosa'];

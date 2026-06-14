@@ -1,11 +1,17 @@
+import json
+import logging
+
+import requests
+from django.conf import settings
 from django.shortcuts import get_object_or_404
-from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from companies.models import CompanyProfile
+from subscriptions.models import UsageRecord
+from subscriptions.services.usage import consume_usage
 from tenders.models import TenderLot
 from .models import AITenderAnalysis, SmartCalculator
 from .serializers import (
@@ -16,29 +22,14 @@ from .serializers import (
     StartAnalysisSerializer,
 )
 
+logger = logging.getLogger(__name__)
+
 
 def _current_company(user, company_id=None):
-    from django.contrib.auth import get_user_model
-    User = get_user_model()
-    
-    # Faqat Demo / Mock rejim uchun:
-    # Agar foydalanuvchi tizimga kirmagan bo'lsa (yoki tokenni mock qilib yuborsak), 
-    # shunchaki "TenderHelper Demo MCHJ" degan mock kompaniyani qaytaradi.
-    demo_user, _ = User.objects.get_or_create(
-        username='demo',
-        defaults={'email': 'demo@tenderhelper.uz'}
-    )
-    demo_company, _ = CompanyProfile.objects.get_or_create(
-        user=demo_user,
-        defaults={
-            'company_name': 'TenderHelper Demo MCHJ',
-            'stir': '123456789',
-            'company_type': 'mchj',
-            'industry': 'IT Dasturlash',
-            'has_vat': True
-        }
-    )
-    return demo_company
+    companies = CompanyProfile.objects.filter(user=user)
+    if company_id:
+        return get_object_or_404(companies, id=company_id)
+    return companies.order_by('-created_at').first()
 
 
 def _collect_tender_text(tender, additional_text=''):
@@ -48,10 +39,6 @@ def _collect_tender_text(tender, additional_text=''):
         text = f"{text}\n{additional_text}".strip()
     return text or tender.title
 
-
-import json
-import requests
-from django.conf import settings
 
 def _run_rule_based_analysis(analysis, tender_text):
     """
@@ -107,7 +94,12 @@ def _run_rule_based_analysis(analysis, tender_text):
     
     try:
         api_key = settings.GEMINI_API_KEY
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
+        if not api_key:
+            raise RuntimeError('Gemini API key is not configured')
+        url = (
+            'https://generativelanguage.googleapis.com/v1beta/models/'
+            f'{settings.GEMINI_MODEL}:generateContent?key={api_key}'
+        )
         payload = {
             "contents": [{"parts": [{"text": prompt}]}],
             "generationConfig": {
@@ -122,7 +114,7 @@ def _run_rule_based_analysis(analysis, tender_text):
             url, 
             json=payload, 
             headers={'Content-Type': 'application/json'}, 
-            timeout=30
+            timeout=settings.GEMINI_TIMEOUT
         )
         response.raise_for_status()
         res_json = response.json()
@@ -146,49 +138,10 @@ def _run_rule_based_analysis(analysis, tender_text):
         analysis.standards = data.get('standards', [])
         analysis.decision = data.get('decision', {})
         
-    except Exception as e:
-        print(f"Gemini API Error: {str(e)}")
-        # Demo uchun mukammal o'rinbosar javob (Fallback Mock JSON)
-        # Agar haqiqiy API xato bersa ham (masalan limit tugasa yoki ruxsat yo'qolsa), 
-        # hakamlarga mukammal natijani ko'rsatish uchun ishlatiladi:
-        mock_data = {
-            "eligibility_score": 92,
-            "summary_text": "Sizning kompaniyangiz ushbu tender talablariga juda mos keladi. Moliyaviy va texnik ko'rsatkichlar yetarli. Asosiy e'tiborni sifat kafolati va logistikaga qaratish tavsiya etiladi.",
-            "missing_documents": [
-                {"name": "Ekologik muvofiqlik sertifikati", "reason": "Tenderda atrof-muhit xavfsizligi talab qilingan", "category": "common"},
-                {"name": "Oxirgi 3 oylik soliq qarzi yo'qligi haqida ma'lumotnoma", "reason": "Soliq qo'mitasidan yangi ma'lumotnoma talab etiladi", "category": "finance"}
-            ],
-            "red_flags": [
-                {"level": "warning", "title": "Yetkazib berish muddati qisqa", "reason": "10 kun ichida to'liq hajmda yetkazib berish sharti qo'yilgan", "recommendation": "Logistika zanjiringiz bunga tayyorligini yana bir bor tekshiring."}
-            ],
-            "standards": [
-                {"name": "O'z DSt 1032:2018", "meaning": "Mahsulot sifati va xavfsizligi milliy standarti", "action": "Mahsulot qadog'ida standart raqamini ko'rsatish shart"}
-            ],
-            "requirements": [
-                {"original": "Mahsulot 100% yangi va qadoqlangan holatda bo'lishi shart", "plain": "Faqat yangi mahsulot olinadi", "action": "Ishlab chiqaruvchi sertifikatini tayyorlash"},
-                {"original": "To'lovlar 30 ish kuni davomida amalga oshiriladi", "plain": "Pulni 1 yarim oygacha kutish mumkin", "action": "Moliyaviy oborotni shunga moslashtirish"}
-            ],
-            "decision": {
-                "fit_percent": 92,
-                "risk_percent": 8,
-                "recommendation": "Albatta qatnashing! Raqobat kuchli bo'lishi mumkin, shuning uchun minimal marjani to'g'ri hisoblang.",
-                "next_actions": [
-                    "Kalkulyator orqali real xarajatingizni hisoblang",
-                    "Yuqorida ko'rsatilgan kam hujjatlarni yig'ishni boshlang",
-                    "UzEx tizimida zakalat (3%) summasini to'ldiring"
-                ],
-                "disclaimer": "Tahlil natijalari AI tomonidan tayyorlangan bo'lib, yakuniy qaror faqat kompaniya rahbariyatiga bog'liq."
-            }
-        }
-        
-        analysis.analysis_status = AITenderAnalysis.Status.COMPLETED
-        analysis.eligibility_score = mock_data.get('eligibility_score')
-        analysis.summary_text = mock_data.get('summary_text')
-        analysis.missing_documents = mock_data.get('missing_documents')
-        analysis.red_flags = mock_data.get('red_flags')
-        analysis.requirements = mock_data.get('requirements')
-        analysis.standards = mock_data.get('standards')
-        analysis.decision = mock_data.get('decision')
+    except Exception:
+        logger.exception('AI analysis provider failed for analysis %s', analysis.id)
+        analysis.analysis_status = AITenderAnalysis.Status.FAILED
+        analysis.error_message = 'AI provider is temporarily unavailable'
 
     analysis.save()
     return analysis
@@ -196,11 +149,8 @@ def _run_rule_based_analysis(analysis, tender_text):
 
 
 @api_view(['POST'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def start_analysis_view(request):
-    print("DEBUG request.user:", request.user)
-    print("DEBUG request.user type:", type(request.user))
-    
     serializer = StartAnalysisSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
     data = serializer.validated_data
@@ -216,6 +166,7 @@ def start_analysis_view(request):
         )
 
     tender = get_object_or_404(TenderLot, id=data['lot_id'])
+    consume_usage(company, UsageRecord.Metric.AI_ANALYSIS)
     analysis = AITenderAnalysis.objects.create(
         company=company,
         tender_lot=tender,
@@ -233,7 +184,7 @@ def start_analysis_view(request):
 
 
 @api_view(['GET'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def analysis_status_view(request, pk):
     analysis = get_object_or_404(
         AITenderAnalysis.objects.filter(company__user=request.user),
@@ -243,7 +194,7 @@ def analysis_status_view(request, pk):
 
 
 @api_view(['GET'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def analysis_result_view(request, pk):
     analysis = get_object_or_404(
         AITenderAnalysis.objects.filter(company__user=request.user),
@@ -253,7 +204,7 @@ def analysis_result_view(request, pk):
 
 
 @api_view(['GET'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def analysis_history_view(request):
     analyses = AITenderAnalysis.objects.filter(company__user=request.user).select_related(
         'company',
@@ -264,7 +215,7 @@ def analysis_history_view(request):
 
 
 @api_view(['POST'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def calculate_view(request, pk):
     analysis = get_object_or_404(
         AITenderAnalysis.objects.filter(company__user=request.user),

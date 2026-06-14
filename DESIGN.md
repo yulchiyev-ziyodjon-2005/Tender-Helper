@@ -1,6 +1,6 @@
 # TenderHelper — UI/UX Dizayn Strukturasi va Ekranlar Spesifikatsiyasi
 
-**Versiya:** 1.0  
+**Versiya:** 1.2
 **Yangilangan:** 2026-06-14  
 **Status:** Canonical dizayn hujjati — barcha frontend ishlanmalar uchun asosiy manba
 
@@ -46,7 +46,9 @@
 /* Tarif ranglari */
 --free-color:       #6b7280;  /* Kulrang */
 --pro-color:        #2d8fff;  /* Ko'k */
+--business-color:   #0f9f7f;  /* Yashil */
 --enterprise-color: #8b5cf6;  /* Binafsha */
+--admin-color:      #dc2626;  /* Privileged action */
 ```
 
 ### 1.2. Tipografiya
@@ -85,6 +87,9 @@
 | `<Stepper>` | Ro'yxatdan o'tish bosqichlari uchun |
 | `<Alert>` | Inline xabar (success/error/warning) |
 | `<SubscriptionGate>` | Tarif cheklovini ko'rsatuvchi wrapper |
+| `<MetricCard>` | Value, trend, interval va freshness bilan KPI karta |
+| `<AdminActionModal>` | Reason, impact preview va step-up confirmation |
+| `<AuditTimeline>` | O'zgarmas admin action tarixini ko'rsatish |
 
 ### 1.4. Layout Printsiplari
 
@@ -138,7 +143,7 @@
 | Google OAuth tugmasi | Google branding, beyaz background, shadow | — |
 | Email field | `type="email"`, placeholder "email@company.uz" | RFC 5322 format |
 | Parol field | `type="password"`, ko'rish tugmasi | Min 8 belgi |
-| Meni eslab qol | 30 kunlik localStorage session | — |
+| Meni eslab qol | Secure HttpOnly refresh session muddati; token localStorage'da saqlanmaydi | — |
 | Kirish tugmasi | Loading spinner kirish vaqtida | — |
 | Parolni unutdim | Modal yoki `/forgot-password` sahifasi | — |
 
@@ -269,6 +274,10 @@ Stepper komponenti yuqorida ko'rinadi, foydalanuvchi qaysi bosqichda ekanligi an
 
 #### BOSQICH 3 — Kompaniya Profili `/register/company`
 
+Bu bosqich STIR kiritishni majburlamaydi. Foydalanuvchi STIR orqali registry
+lookup qiladi yoki `STIRsiz davom etish`ni tanlab profilni qo'lda to'ldiradi.
+Registry natijasi user tasdig'isiz yakuniy profilga yozilmaydi.
+
 ```
 ┌──────────────────────────────────────────────────────────┐
 │  ○━━━━━○━━━━━●━━━━━○   (Stepper: 3-Kompaniya)            │
@@ -282,10 +291,14 @@ Stepper komponenti yuqorida ko'rinadi, foydalanuvchi qaysi bosqichda ekanligi an
 │   └─────────────────────────────────────────────────┘    │
 │                                                          │
 │   ┌──────────────────────┐ ┌────────────────────────┐   │
-│   │  STIR (INN) *        │ │  Tashkiliy shakl *      │   │
-│   │  [_______________]   │ │  [YaTT          ▼]      │   │
+│   │  STIR (ixtiyoriy)    │ │  [Reyestrdan topish]     │   │
+│   │  [_______________]   │ │  [STIRsiz davom etish]   │   │
 │   └──────────────────────┘ └────────────────────────┘   │
-│   ℹ️ 9 xonali soliq raqam    YaTT / MChJ / AJ / XK     │
+│   ℹ️ 9 xonali soliq raqam; rasmiy hujjatlar uchun kerak │
+│                                                          │
+│   REGISTRY DRAFT                                         │
+│   ✓ "Example MChJ" • Rahbar • Manzil • QQS              │
+│   [Qiymatlarni tahrirlash] [Tasdiqlash]                  │
 │                                                          │
 │   Asosiy faoliyat sohasi *                              │
 │   [IT va Dasturlash                                ▼]    │
@@ -309,16 +322,28 @@ Stepper komponenti yuqorida ko'rinadi, foydalanuvchi qaysi bosqichda ekanligi an
 │                                                          │
 │   [← Orqaga]         [Keyingisi: Tarif →]               │
 │                                                          │
-│   ⏭ [Hozircha o'tkazib yuborish]                         │
-│   (Keyinroq sozlamalardan to'ldirish mumkin)             │
+│   ⏭ [STIRsiz davom etish]                                │
+│   (Tizim ochiladi, rasmiy document funksiyalari gated)   │
 └──────────────────────────────────────────────────────────┘
 ```
+
+Holatlar:
+
+- lookup loading, ready, not-found, timeout va provider-unavailable;
+- registry qiymati va user tahriri vizual farqlanadi;
+- skip qilinganda yopiladigan funksiyalar ro'yxati ko'rsatiladi;
+- STIR keyinroq company settings orqali qo'shilishi mumkin.
 
 ---
 
 #### BOSQICH 4 — Tarif Tanlash `/register/plan`
 
 ```
+
+Pricing grid desktopda Free, Pro, Business va Enterprise tariflarini
+ko'rsatadi. Enterprise Business imkoniyatlarini meros oladi va yuqori limit,
+audit hamda priority support bilan farqlanadi. Mobil ekranda kartalar
+gorizontal carousel emas, vertikal comparison sifatida beriladi.
 ┌──────────────────────────────────────────────────────────┐
 │  ○━━━━━○━━━━━○━━━━━●   (Stepper: 4-Tarif)                │
 │                                                          │
@@ -453,7 +478,8 @@ Stepper komponenti yuqorida ko'rinadi, foydalanuvchi qaysi bosqichda ekanligi an
 ```
 
 **Tarif cheklov ko'rsatish:**
-- Pro/Biznes faqat uchun bo'lgan funksiyalar `[PRO 🔒]` badge bilan ko'rinadi
+- Pullik funksiyalar kerakli tarif bilan (`PRO`, `BUSINESS`, `ENTERPRISE`)
+  badge va aniq upgrade action orqali ko'rsatiladi.
 - Ustiga bosish → "Bu funksiya Pro tarifida mavjud" modal ochiladi
 - Sidebar pastida tarif holati va qolgan limit progress bar'i
 
@@ -967,8 +993,8 @@ Tizimda yo'q bo'lgan, yoki xususiy korporativ tenderlarni qo'lda fayl yuklash or
 │  │  Kompaniya nomi *                                    │  │
 │  │  [IT Solutions MCHJ                        ]         │  │
 │  │                                                      │  │
-│  │  STIR (INN) *              Tashkiliy shakl *          │  │
-│  │  [123456789        ]       [MChJ              ▼]     │  │
+│  │  STIR / Registry status                              │  │
+│  │  [123456789] [Verified] [Reyestrni yangilash]        │  │
 │  │                                                      │  │
 │  │  Asosiy faoliyat sohasi *                            │  │
 │  │  [IT va Dasturlash                          ▼]       │  │
@@ -998,7 +1024,7 @@ Tizimda yo'q bo'lgan, yoki xususiy korporativ tenderlarni qo'lda fayl yuklash or
 
 ---
 
-## 13. Jamoa Bo'limi — `/team` (Pro/Biznes)
+## 13. Jamoa Bo'limi — `/team` (Business/Enterprise)
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -1041,17 +1067,17 @@ Tizimda yo'q bo'lgan, yoki xususiy korporativ tenderlarni qo'lda fayl yuklash or
 
 ---
 
-## 14. Raqobatchilar Tahlili — `/competitors` (Biznes)
+## 14. Raqobatchilar Tahlili — `/competitors` (Business/Enterprise)
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  🏆 Raqobatchilar Tahlili                     [+ Qo'shish]  │
+│  🏆 TOP Raqobatchilar        Updated 12:30 • 47 source lot │
 │                                                             │
 │  ┌──────────────────────────────────────────────────────┐  │
 │  │  Kompaniya nomi     STIR         G'alaba %  Kuzatish │  │
 │  │  ABC Systems MCHJ   123456789    34%        👁 [📊]   │  │
 │  │  TechBuild LLC      987654321    28%        👁 [📊]   │  │
-│  │  Yangi kompaniya    [__________] [Topish]             │  │
+│  │  Yetarli data bo'lmasa: "insufficient data"           │  │
 │  └──────────────────────────────────────────────────────┘  │
 │                                                             │
 │  ABC SYSTEMS MCHJ — STATISTIKA                             │
@@ -1069,6 +1095,11 @@ Tizimda yo'q bo'lgan, yoki xususiy korporativ tenderlarni qo'lda fayl yuklash or
 │  └──────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────┘
 ```
+
+Dashboard lot/category/period filterlariga ega. Rank, g'alaba, ishtirok,
+win-rate, o'rtacha demping, sample size va `calculated_at` ko'rsatiladi.
+Qo'lda competitor qo'shish MVP oqimiga kirmaydi; statistikalar yakunlangan
+ochiq tender natijalaridan avtomatik hisoblanadi.
 
 ---
 
@@ -1326,7 +1357,11 @@ Bottom navigation: Dashboard, Tenderlar, Tahlillar, Profil.
 
 ---
 
-## 22. Fayllar va Marshrut Tuzilmasi
+## 22. Target Fayllar va Marshrut Tuzilmasi
+
+Quyidagi daraxt mavjud repo snapshoti emas, tasdiqlangan target frontend
+strukturasi. Amaldagi fayllar bosqichma-bosqich shu ownership chegaralariga
+ko'chiriladi.
 
 ```
 frontend/src/
@@ -1352,21 +1387,37 @@ frontend/src/
 │       ├── SavedPage.jsx
 │       ├── NotificationsPage.jsx
 │       ├── BillingPage.jsx
-│       ├── TeamPage.jsx              ← Pro/Biznes
-│       ├── CompetitorsPage.jsx       ← Biznes
+│       ├── TeamPage.jsx              ← Business/Enterprise
+│       ├── CompetitorsPage.jsx       ← Business/Enterprise
+│       ├── DocumentsPage.jsx          ← Business/Enterprise
+│       ├── DocumentEditorPage.jsx     ← Business/Enterprise + STIR
 │       └── settings/
 │           ├── SettingsPage.jsx
 │           ├── CompanySettings.jsx
 │           ├── SecuritySettings.jsx
 │           ├── TelegramSettings.jsx
 │           └── InterfaceSettings.jsx
+│   │
+│   └── superadmin/
+│       ├── AdminOverviewPage.jsx
+│       ├── AdminUsersPage.jsx
+│       ├── AdminCompaniesPage.jsx
+│       ├── AdminPlansPage.jsx
+│       ├── AdminSubscriptionsPage.jsx
+│       ├── AdminPaymentsPage.jsx
+│       ├── AdminBusinessUsagePage.jsx
+│       ├── AdminOperationsPage.jsx
+│       ├── AdminTemplatesPage.jsx
+│       ├── AdminSettingsPage.jsx
+│       └── AdminAuditPage.jsx
 │
 ├── components/
 │   ├── layout/
 │   │   ├── AppLayout.jsx
 │   │   ├── Sidebar.jsx
 │   │   ├── Header.jsx
-│   │   └── BottomNav.jsx            ← Mobile
+│   │   ├── BottomNav.jsx            ← Mobile
+│   │   └── AdminLayout.jsx          ← Privileged desktop layout
 │   │
 │   ├── ui/
 │   │   ├── Button.jsx
@@ -1405,15 +1456,34 @@ frontend/src/
 │   │   ├── PlanComparisonModal.jsx
 │   │   └── PaymentModal.jsx
 │   │
-│   └── dashboard/
+│   ├── documents/
+│   │   ├── TemplatePicker.jsx
+│   │   ├── DocumentEditor.jsx
+│   │   ├── DocumentStatus.jsx
+│   │   ├── RevisionHistory.jsx
+│   │   └── ExportModal.jsx
+│   │
+│   ├── dashboard/
 │       ├── StatsCard.jsx
 │       ├── RecentAnalyses.jsx
 │       └── DeadlineWidget.jsx
+│   │
+│   └── admin/
+│       ├── AdminSidebar.jsx
+│       ├── MetricCard.jsx
+│       ├── HealthStatusGrid.jsx
+│       ├── AdminDataTable.jsx
+│       ├── AdminActionModal.jsx
+│       ├── StepUpAuthModal.jsx
+│       ├── EntitlementPreview.jsx
+│       ├── PaymentTimeline.jsx
+│       └── AuditTimeline.jsx
 │
 ├── routes/
 │   ├── AppRouter.jsx
 │   ├── PublicRoute.jsx
-│   └── PrivateRoute.jsx
+│   ├── PrivateRoute.jsx
+│   └── AdminRoute.jsx          ← Capability + MFA guard
 │
 ├── store/
 │   ├── authStore.js          ← Zustand
@@ -1426,7 +1496,8 @@ frontend/src/
 │   ├── tenders.js
 │   ├── analyses.js
 │   ├── calculator.js
-│   └── billing.js
+│   ├── billing.js
+│   └── admin.js                ← Superadmin control-plane API
 │
 ├── i18n/
 │   ├── index.js
@@ -1445,7 +1516,205 @@ frontend/src/
 
 ---
 
-## 23. Tarif Huquqlari Matritsasi (Kodda ishlatish uchun)
+## 23. AI Document Workspace — `/documents`
+
+Business/Enterprise va STIR tasdiqlangan company uchun hujjat yaratish,
+inline tahrirlash, tasdiqlash va export oqimi.
+
+### 23.1. Hujjatlar ro'yxati
+
+- template, tender, status, author va updated time;
+- `generating`, `draft`, `approved`, `exported`, `failed`, `archived` badge;
+- template turi va til filteri;
+- empty state rasmiy document funksiyasi uchun STIR gate sababini ko'rsatadi.
+
+### 23.2. Generate flow
+
+1. Tender tanlash.
+2. Ariza, kafolat xati, tijorat taklifi yoki compliance template tanlash.
+3. Company va tender context preview.
+4. Yetishmayotgan majburiy fieldlarni to'ldirish.
+5. Async generation boshlash.
+6. Haqiqiy status polling; soxta progress yo'q.
+
+### 23.3. Inline Editor — `/documents/{id}/edit`
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│ Draft • Kafolat xati  Saved 8s ago  [Versions] [Approve] [Export]│
+├───────────────────────┬──────────────────────────────────────────┤
+│ Context               │ Rich Text Editor                         │
+│ Company / STIR        │ Heading, paragraph, list, table          │
+│ Tender / buyer        │                                          │
+│ Verified facts        │ [Canonical document content]             │
+│ Warnings              │                                          │
+├───────────────────────┴──────────────────────────────────────────┤
+│ AI disclaimer • Template v3 • Edit version 12                    │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+- autosave 2-5 soniya debounce;
+- optimistic locking va `409 Conflict` resolution;
+- XSS sanitization;
+- canonical JSON, sanitized HTML preview;
+- approval userning ongli actioni;
+- PDF/DOCX export approvaldan keyin;
+- generation yoki export xatosi real `FAILED` holatida ko'rsatiladi.
+
+---
+
+## 24. Superadmin Console — `/superadmin`
+
+Superadmin oddiy foydalanuvchi sidebaridan ajratilgan alohida privileged
+layoutda ishlaydi. U Business tarifining mavjud subscription, feature va
+usage ma'lumotlarini boshqaradi; yangi billing oqimi yaratmaydi.
+
+### 24.1. Kirish va global layout
+
+- route guard: admin capability + MFA;
+- kritik amaldan oldin step-up re-auth modal;
+- yuqorida qizil `SUPERADMIN` environment badge;
+- production/staging muhiti doim ko'rinadi;
+- global search: user, email, telefon, company va STIR;
+- default desktop-first, tablet read-only support; kritik write action
+  mobil ekranda cheklanadi;
+- har bir sahifada `updated_at` va data freshness.
+
+Sidebar:
+
+1. Overview.
+2. Userlar.
+3. Kompaniyalar.
+4. Tariflar va Feature'lar.
+5. Obunalar.
+6. To'lovlar.
+7. Business Usage.
+8. AI Operatsiyasi.
+9. Tender/Scraping.
+10. Hujjat Shablonlari.
+11. System Settings.
+12. Audit Log.
+
+### 24.2. Overview — `/superadmin`
+
+```
+┌────────────────────────────────────────────────────────────────────┐
+│ SUPERADMIN • Production   [Global search]  Updated 12s ago  [Admin]│
+├────────────────────────────────────────────────────────────────────┤
+│ [MRR] [Active subscriptions] [DAU] [AI cost] [Failed payments]    │
+│                                                                    │
+│ Revenue & subscriptions        User growth / onboarding funnel     │
+│ [time-series chart]            [chart + STIR completion]           │
+│                                                                    │
+│ Business feature adoption      System health                       │
+│ [generator/editor/competitor]  [API][Queue][AI][Scraping][Payment] │
+│                                                                    │
+│ Alerts: failed webhook, stale scraper, high AI failure, queue lag  │
+└────────────────────────────────────────────────────────────────────┘
+```
+
+Filterlar: `Today`, `7 kun`, `30 kun`, `90 kun`, custom range. Revenue
+kartalari reconciled, operational kartalar near-real-time badge bilan
+ajratiladi. Stale metrika yashirilmaydi, sariq `Data delayed` holatiga o'tadi.
+
+### 24.3. User va kompaniyalar
+
+`/superadmin/users` DataTable:
+
+- ism, email/telefon, company, role, plan, status, last active;
+- qidiruv va status/plan/STIR/date filter;
+- detail drawer: auth/session, memberships, onboarding, usage va support
+  timeline;
+- amallar: block/unblock, session revoke;
+- PII maskalangan, reveal/export uchun reason modal.
+
+`/superadmin/companies`:
+
+- company, STIR/registry status, owner, members, plan, usage va created date;
+- detailda Business feature usage, generated documents va competitor
+  analytics agregati;
+- company entitlement preview va subscription tarixiga deep link.
+
+Impersonation tugmasi ko'rsatilmaydi.
+
+### 24.4. Tarif, feature va obunalar
+
+`/superadmin/plans`:
+
+- Free, Pro, Business, Enterprise kartalari;
+- narx, billing period, fair-use, team seats va feature matrix;
+- draft change -> impact preview -> publish oqimi;
+- mavjud subscriberlarga ta'siri alohida ko'rsatiladi.
+
+`/superadmin/subscriptions`:
+
+- active/trial/expired/cancelled/paused filterlari;
+- company, plan, period, next charge, usage va payment status;
+- activate, upgrade, scheduled downgrade, pause, cancel, extend;
+- har bir actionda reason, effective date, expiry va confirmation;
+- Business entitlementlar: document generation, editor/export, competitor
+  intelligence va team alohida ko'rinadi.
+
+### 24.5. To'lov va revenue
+
+`/superadmin/payments`:
+
+- transaction status, provider ID, amount, company, plan va timestamp;
+- prepare/complete webhook timeline;
+- failed/replayed webhook va reconciliation mismatch queue;
+- refund review alohida danger modalda;
+- completed transaction uchun inline amount/status edit yo'q;
+- CSV export capability va audit bilan.
+
+### 24.6. Business Usage va operatsiyalar
+
+`/superadmin/business-usage`:
+
+- company/plan/date bo'yicha generator, export, competitor va team usage;
+- limitga yaqin companylar;
+- adoption funnel va unit cost.
+
+`/superadmin/operations` tablari:
+
+- AI: request, token, cost, latency, failure, provider/model;
+- Scraping: source, last run, freshness, errors, retry;
+- Queue: depth, active/failed task va dead-letter;
+- Feature flags: kill switch va maintenance banner;
+- Templates: version, language, active/published holati.
+
+Pause, retry, publish va kill switch actionlari step-up modal va impact
+summary talab qiladi.
+
+### 24.7. Audit Log — `/superadmin/audit`
+
+Ustunlar:
+
+- vaqt;
+- admin;
+- capability;
+- action;
+- target;
+- reason;
+- oldingi/yangi qiymat;
+- request ID va IP;
+- success/failure.
+
+Audit detail drawer o'qish uchun; edit/delete action yo'q. Filter va export
+faqat tegishli capability bilan.
+
+### 24.8. Holatlar va xavfsizlik UX
+
+- danger action qizil, destructive bo'lmagan action secondary;
+- bulk action avval preview va affected count ko'rsatadi;
+- write conflict `409` bo'lsa yangi qiymat va refresh actioni ko'rsatiladi;
+- step-up session muddati headerda ko'rinadi;
+- permission yetmasa disabled tugma emas, action umuman ko'rsatilmaydi;
+- read-only support roli billing yoki operations write actionini ko'rmaydi;
+- barcha grafiklarda empty, loading, error va stale state mavjud.
+
+---
+
+## 25. Tarif Huquqlari Matritsasi (Kodda ishlatish uchun)
 
 ```javascript
 // subscriptionHelpers.js
@@ -1461,6 +1730,9 @@ export const PLAN_FEATURES = {
     competitor_analysis: false,
     advanced_filters: false,
     api_access: false,
+    document_generation: false,
+    document_export: false,
+    advanced_audit: false,
   },
   pro: {
     analysis_per_month: null,       // Cheksiz (fair-use: 100)
@@ -1473,9 +1745,12 @@ export const PLAN_FEATURES = {
     competitor_analysis: false,
     advanced_filters: true,
     api_access: false,
+    document_generation: false,
+    document_export: false,
+    advanced_audit: false,
   },
   business: {
-    analysis_per_month: null,       // Cheksiz (fair-use: 500)
+    analysis_per_month: null,       // Cheksiz (fair-use: 250)
     saved_tenders: null,            // Cheksiz
     telegram_notifications: true,
     export_pdf: true,
@@ -1485,6 +1760,24 @@ export const PLAN_FEATURES = {
     competitor_analysis: true,
     advanced_filters: true,
     api_access: true,
+    document_generation: true,
+    document_export: true,
+    advanced_audit: false,
+  },
+  enterprise: {
+    analysis_per_month: null,       // Cheksiz (fair-use: 500)
+    saved_tenders: null,
+    telegram_notifications: true,
+    export_pdf: true,
+    export_excel: true,
+    analysis_history: true,
+    team_members: null,             // Contract bo'yicha
+    competitor_analysis: true,
+    advanced_filters: true,
+    api_access: true,
+    document_generation: true,
+    document_export: true,
+    advanced_audit: true,
   },
 };
 
@@ -1493,6 +1786,10 @@ export const PLAN_FEATURES = {
 //   <ExportButton />
 // </SubscriptionGate>
 ```
+
+Superadmin ushbu tarif matritsasiga kirmaydi. Uning ruxsatlari obuna orqali
+emas, `Plan.md` va `IMPLEMENTATION_PLAN.md`dagi capability matrix, MFA va
+step-up authentication qoidalari orqali beriladi.
 
 ---
 

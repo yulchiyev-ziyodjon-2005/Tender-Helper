@@ -1,16 +1,45 @@
-# React + Vite
+# TenderHelper Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React 19, Vite 8, Tailwind CSS 4, React Router 7, TanStack Query va Zustand
+asosidagi demo/MVP frontend.
 
-Currently, two official plugins are available:
+## Hozirgi Holat
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Mavjud route'lar:
 
-## React Compiler
+- `/`
+- `/login`
+- `/auth/google/callback`
+- `/dashboard`
+- `/analysis`
+- `/settings`
+- `/onboarding`
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+`PrivateRoute` va `PublicRoute` hozir vaqtincha auth tekshiruvini chetlab
+o'tadi. JWT tokenlar `localStorage`da saqlanadi va Google callback tokenlarni
+URL query orqali frontendga beradi. Bu demo holat; productiondan oldin
+`Plan.md` Bosqich 0 bo'yicha route guard va xavfsiz auth oqimi joriy qilinadi.
 
-## Expanding the ESLint configuration
+Target ekranlar va komponentlar [`../DESIGN.md`](../DESIGN.md)da,
+bosqichlar esa [`../IMPLEMENTATION_PLAN.md`](../IMPLEMENTATION_PLAN.md)da
+belgilangan.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Ishga Tushirish
+
+```powershell
+npm install
+npm run dev
+```
+
+## Tekshiruv
+
+```powershell
+npm run lint
+npm run build
+```
+
+Frontend environment:
+
+```text
+VITE_API_BASE_URL=http://localhost:8000/api/v1
+```

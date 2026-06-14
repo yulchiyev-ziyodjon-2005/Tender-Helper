@@ -5,10 +5,12 @@ Auth API: OTP yuborish/tasdiqlash, Google OAuth, profil.
 """
 
 import logging
+import secrets
 from urllib.parse import urlencode
 
 from django.conf import settings
 from django.core import signing
+from django.core.cache import cache
 from django.shortcuts import redirect
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
@@ -35,6 +37,7 @@ from .services.google_oauth import (
 )
 
 logger = logging.getLogger(__name__)
+GOOGLE_EXCHANGE_TTL_SECONDS = 120
 
 
 def _get_tokens_for_user(user):
@@ -298,17 +301,55 @@ def google_oauth_callback_view(request):
     if created:
         logger.info(f"New user registered via Google OAuth redirect: {google_user['email']}")
 
-    tokens = _get_tokens_for_user(user)
     next_path = state_data.get('next') or '/dashboard'
     if created:
         next_path = '/onboarding'
 
+    exchange_code = secrets.token_urlsafe(32)
+    cache.set(
+        f'tenderhelper:google-exchange:{exchange_code}',
+        {
+            'user_id': str(user.id),
+            'is_new_user': created,
+            'next': next_path,
+        },
+        timeout=GOOGLE_EXCHANGE_TTL_SECONDS,
+    )
+
     return _frontend_redirect('/auth/google/callback', {
-        'access': tokens['access'],
-        'refresh': tokens['refresh'],
-        'is_new_user': '1' if created else '0',
-        'next': next_path,
+        'code': exchange_code,
     })
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def google_oauth_exchange_view(request):
+    code = request.data.get('code')
+    if not isinstance(code, str) or not code:
+        return Response(
+            {'error': 'invalid_code', 'message': 'Google exchange kodi kiritilmagan'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    cache_key = f'tenderhelper:google-exchange:{code}'
+    exchange = cache.get(cache_key)
+    cache.delete(cache_key)
+    if exchange is None:
+        return Response(
+            {'error': 'invalid_code', 'message': 'Google exchange kodi yaroqsiz yoki muddati tugagan'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    user = CustomUser.objects.filter(id=exchange['user_id'], is_active=True).first()
+    if user is None:
+        return Response(
+            {'error': 'inactive_user', 'message': 'Foydalanuvchi topilmadi yoki bloklangan'},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
+    payload = _auth_payload(user, exchange['is_new_user'])
+    payload['next'] = exchange['next']
+    return Response(payload, status=status.HTTP_200_OK)
 
 
 # ══════════════════════════════════════════════════

@@ -6,7 +6,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.filters import OrderingFilter, SearchFilter
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from .filters import TenderLotFilter
@@ -38,7 +38,7 @@ class TenderDetailView(generics.RetrieveAPIView):
 
 
 @api_view(['POST'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def manual_tender_view(request):
     """
     POST /api/v1/tenders/manual/
@@ -60,6 +60,7 @@ def manual_tender_view(request):
         posted_date=timezone.now(),
         deadline=data.get('deadline') or (timezone.now() + timedelta(days=7)),
         status=TenderLot.Status.ACTIVE,
+        created_by=request.user,
     )
     TenderDocumentChunk.objects.create(
         tender_lot=tender,

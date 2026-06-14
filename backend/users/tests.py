@@ -87,7 +87,7 @@ class AuthFlowTests(APITestCase):
         FRONTEND_BASE_URL='http://localhost:5173',
     )
     @patch('users.views.exchange_code_for_user_info')
-    def test_google_oauth_callback_redirects_to_frontend_with_tokens(self, mock_exchange_code):
+    def test_google_oauth_callback_uses_one_time_exchange_code(self, mock_exchange_code):
         mock_exchange_code.return_value = {
             'email': 'redirect.user@example.com',
             'name': 'Redirect User',
@@ -102,6 +102,22 @@ class AuthFlowTests(APITestCase):
         location = response['Location']
         self.assertTrue(location.startswith('http://localhost:5173/auth/google/callback'))
         params = parse_qs(urlparse(location).query)
-        self.assertIn('access', params)
-        self.assertIn('refresh', params)
-        self.assertEqual(params['is_new_user'][0], '1')
+        self.assertIn('code', params)
+        self.assertNotIn('access', params)
+        self.assertNotIn('refresh', params)
+
+        response = self.client.post(
+            '/api/v1/auth/google/exchange/',
+            {'code': params['code'][0]},
+            format='json',
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('access', response.data['tokens'])
+        self.assertTrue(response.data['is_new_user'])
+
+        replay = self.client.post(
+            '/api/v1/auth/google/exchange/',
+            {'code': params['code'][0]},
+            format='json',
+        )
+        self.assertEqual(replay.status_code, status.HTTP_400_BAD_REQUEST)

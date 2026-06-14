@@ -154,6 +154,7 @@ REST_FRAMEWORK = {
     'DEFAULT_THROTTLE_RATES': {
         'anon': '15/minute',       # Anonim foydalanuvchilar
         'user': '60/minute',       # Autentifikatsiya qilingan
+        'registry_lookup': '10/hour',
     },
 
     # Pagination
@@ -216,9 +217,28 @@ FRONTEND_BASE_URL = os.getenv('FRONTEND_BASE_URL', 'http://localhost:5173').rstr
 # ══════════════════════════════════════════════════════
 
 # ──────────────── AI (Google Gemini) ────────────────
+# Company registry
+COMPANY_REGISTRY_PROVIDER = os.getenv(
+    'COMPANY_REGISTRY_PROVIDER',
+    'companies.services.registry.DisabledCompanyRegistryProvider',
+)
+COMPANY_REGISTRY_API_URL = os.getenv('COMPANY_REGISTRY_API_URL', '')
+COMPANY_REGISTRY_API_TOKEN = os.getenv('COMPANY_REGISTRY_API_TOKEN', '')
+COMPANY_REGISTRY_SOURCE = os.getenv('COMPANY_REGISTRY_SOURCE', 'tax')
+COMPANY_REGISTRY_TIMEOUT_SECONDS = float(
+    os.getenv('COMPANY_REGISTRY_TIMEOUT_SECONDS', '5')
+)
+COMPANY_REGISTRY_RETRY_COUNT = int(os.getenv('COMPANY_REGISTRY_RETRY_COUNT', '1'))
+COMPANY_REGISTRY_CACHE_SECONDS = int(
+    os.getenv('COMPANY_REGISTRY_CACHE_SECONDS', '86400')
+)
+COMPANY_REGISTRY_DRAFT_TTL_SECONDS = int(
+    os.getenv('COMPANY_REGISTRY_DRAFT_TTL_SECONDS', '1800')
+)
+
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')
-GEMINI_MODEL = 'gemini-2.0-flash'
-GEMINI_TIMEOUT = 30  # seconds
+GEMINI_MODEL = os.getenv('GEMINI_MODEL', 'gemini-2.5-flash')
+GEMINI_TIMEOUT = int(os.getenv('GEMINI_TIMEOUT', '30'))
 
 # ──────────────── SMS OTP ────────────────
 SMS_PROVIDER = os.getenv('SMS_PROVIDER', 'console')  # 'console' | 'eskiz'

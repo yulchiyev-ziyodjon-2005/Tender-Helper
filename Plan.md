@@ -1,6 +1,6 @@
 # TenderHelper — Asosiy Strategik va Texnik Reja
 
-**Versiya:** 4.0  
+**Versiya:** 4.3
 **Yangilangan:** 2026-06-14  
 **Status:** Canonical plan — barcha texnik qarorlar uchun yagona boshqaruvchi hujjat
 
@@ -25,6 +25,14 @@ OpenAPI schema va issue trackerda yuritiladi. Hujjat va kod o'rtasida
 ziddiyat bo'lsa — **hujjat yangilanadi yoki kod to'g'rilanadi**, lekin
 ular parallel va bir-biriga zid holatda qolmasligi shart.
 
+Ushbu strategiyaning bajarilish ketma-ketligi, work package'lar, model va API
+spetsifikatsiyasi hamda acceptance criteria'lari `IMPLEMENTATION_PLAN.md`
+kanonik companion hujjatida yuritiladi.
+
+UI/UX ekranlari va interaction contractlari `DESIGN.md`da yuritiladi.
+`docs/API.md` esa amaldagi implementatsiya qilingan API'ning snapshotidir;
+target endpointlar ushbu reja va `IMPLEMENTATION_PLAN.md`da belgilanadi.
+
 ---
 
 ## 2. Loyiha Maqsadi
@@ -39,9 +47,14 @@ Platforma:
 - tender shartlarini oddiy tilda tushuntiradi;
 - kompaniya profiliga nisbatan moslik ballini hisoblaydi;
 - hujjatlar checklisti va xavf signallarini beradi;
+- STIR orqali ochiq davlat reyestrlaridan kompaniya rekvizitlarini topib,
+  onboarding formasini editable draft sifatida avtomatik to'ldiradi;
+- kompaniya va tender konteksti asosida ariza, kafolat xati va tijorat
+  takliflarini generatsiya qilib, inline tahrirlash imkonini beradi;
 - tannarx, QQS, komissiya va foyda chegarasini hisoblaydi;
 - mos lotlar haqida Telegram orqali xabar beradi;
-- keyingi bosqichlarda jamoaviy ish va raqobatchilar tahlilini taqdim etadi.
+- Business tarifida jamoaviy ish va real ochiq ma'lumotlarga asoslangan
+  raqobatchilar tahlilini taqdim etadi.
 
 Platforma tenderda g'alabani kafolatlamaydi va yuridik maslahat o'rnini
 bosmaydi. Har bir AI natijasi dalil, manba va disclaimer bilan berilishi kerak.
@@ -83,6 +96,20 @@ Repository hozir demo/MVP prototip bosqichida:
 | 6 | QQS va komissiya stavkalari global konstanta, platformaga bog'lanmagan | 🟡 O'rta | §12.2 |
 | 7 | Groq SDK `requirements.txt` da yo'q | 🟡 O'rta | §10.2 |
 | 8 | OAuth callback tokenni URL query parametrida qaytaradi | 🟡 O'rta | §7.2 |
+| 9 | Manual tender yaratish `AllowAny` | 🔴 Kritik | §7.3, §17 |
+| 10 | Frontend private/public route guard vaqtincha o'chirilgan | 🔴 Kritik | §7.2, §16 |
+| 11 | Amaldagi tarif modeli faqat Free/Pro/Enterprise | 🟡 O'rta | §14.1 |
+| 12 | `subscriptions` modeli va payment lifecycle hali yo'q | 🔴 Kritik | §14 |
+| 13 | `documents` app va document editor route'lari mavjud emas | 🟡 O'rta | §6.4, §10.6 |
+| 14 | `teams` va `competitors` applari placeholder | 🟡 O'rta | §6.7, §11.1 |
+| 15 | API error envelope endpointlar bo'yicha bir xil emas | 🟡 O'rta | §15 |
+| 16 | `docs/API.md` faqat amaldagi demo API snapshoti | 🟢 Axborot | §15 |
+| 17 | `_current_company()` olib tashlangan `username` field orqali demo user qidiradi | 🔴 Kritik | §4.3, §7.3 |
+| 18 | `.env.example`da `DEMO_MODE` ko'rsatilmagan | 🟡 O'rta | §7.3, §20 |
+| 19 | OTP `random` bilan yaratiladi va console/loggerga kod chiqaradi | 🔴 Kritik | §17 |
+| 20 | `CompanyProfile.user` bitta egaga bog'langan, membership modeli yo'q | 🟡 O'rta | §6.1, §7.3 |
+| 21 | Tender identity global unique `lot_number`, target `(source, external_id)` emas | 🟡 O'rta | §6.2, §8.2 |
+| 22 | Ko'p app testlari placeholder, analysis testi mock success'ni legitimlashtiradi | 🔴 Kritik | §19 |
 
 ---
 
@@ -222,6 +249,8 @@ Hosting:
 
 - `CustomUser` — telefon, email, Google OAuth.
 - `CompanyProfile` — STIR, tashkiliy shakl, soha, QQS holati.
+- `CompanyProfile` registry maydonlari — rahbar, yuridik manzil, registry
+  manbasi/statusi, oxirgi lookup va STIR skip holati.
 - `CompanyMember` — foydalanuvchi↔kompaniya bog'lanishi va roli.
 - `UserConsent` — shaxsiy ma'lumotlar qayta ishlashga rozilik.
 - `NotificationPreference` — kanal va chastota sozlamalari.
@@ -254,32 +283,53 @@ AI natijasi faqat JSON blob bo'lib qolmasligi kerak. Muhim findinglar,
 ularning severity (`blocker`, `warning`, `info`), confidence (0.0–1.0) va
 citation (hujjat, sahifa, chunk, evidence) ma'lumotlari alohida saqlanadi.
 
-### 6.4. Tavsiyalar
+### 6.4. Generatsiya qilinadigan hujjatlar
+
+- `TenderDocumentTemplate` — versiyalangan ariza, kafolat xati va taklif
+  shablonlari, talab qilinadigan company fieldlar va prompt konfiguratsiyasi.
+- `GeneratedDocument` — kompaniya va tender kontekstidan yaratilgan,
+  canonical rich-text JSON asosida inline tahrirlanadigan hujjat drafti.
+- `GeneratedDocumentRevision` — autosave'dan tashqari muhim versiyalar,
+  muallif, vaqt va o'zgarish metadata'si.
+- `DocumentExport` — PDF/DOCX export holati va object storage metadata'si.
+
+Ushbu modellar `analysis` ichida emas, alohida `documents` Django app'ida
+joylashadi. Sanitizatsiyalangan HTML va plain text canonical JSON'dan hosil
+qilinadigan projection hisoblanadi.
+
+### 6.5. Tavsiyalar
 
 - `CompanyTenderMatch` — kompaniya↔lot moslik balli.
 - `SavedSearch` — saqlangan qidiruv filtrlari.
 - `Watchlist` — kuzatiladigan lotlar.
 - `NotificationDelivery` — yuborilgan xabarlar logi.
 
-### 6.5. Billing
+### 6.6. Billing
 
 - `SubscriptionPlan` — tarif parametrlari.
 - `CompanySubscription` — kompaniyaning aktiv tarifi.
 - `UsageRecord` — AI tahlil, qidiruv va export sarfi.
 - `PaymentTransaction` — to'lov tranzaksiyalari.
 - `WebhookEvent` — provider webhook logi (idempotency key bilan).
+- `AdminAuditEvent` — superadminning kritik boshqaruv amallari uchun
+  append-only audit yozuvi.
 
 To'lov holati faqat tekshirilgan provider webhookidan keyin o'zgaradi.
 Client-side callback **hech qachon** subscriptionni faollashtirmaydi.
 
-### 6.6. Enterprise (keyingi bosqich)
+### 6.7. Business Intelligence va Enterprise
 
 - `TeamTask` — jamoa vazifalari.
 - `TaskComment` — vazifa izohlari.
 - `Competitor` — raqobatchi kompaniyalar.
 - `CompetitorTenderResult` — raqobatchi tender natijalari.
+- `CompetitorAnalytics` — lot yoki kategoriya kesimida hisoblangan rank,
+  g'alabalar, ishtiroklar va o'rtacha demping statistikasi.
 
-Enterprise modullari core MVP barqarorlashgandan keyin yoqiladi.
+Competitor analytics'ning lot/category bo'yicha baseline ko'rinishi Business
+beta sifatida MVP tarkibiga kiradi. Team task, trend/comparison export,
+kengaytirilgan audit va yuqori limitlar core MVP barqarorlashgandan keyingi
+Business/Enterprise bosqichida yoqiladi.
 
 ---
 
@@ -325,6 +375,62 @@ Keyingi bosqich:
     faqat foydalanuvchining haqiqiy kompaniyasini qaytaradi yoki `None`.
   - Demo mode production `.env` da **hech qachon** `True` bo'lmaydi.
 
+### 7.4. STIR onboarding va registry lookup
+
+Onboarding foydalanuvchini STIR kiritishga majburlamaydi, lekin STIR mavjud
+bo'lsa rasmiy rekvizitlar bilan ishlaydigan imkoniyatlarni ochadi.
+
+Oqim:
+
+1. Foydalanuvchi STIR kiritadi.
+2. Frontend `POST /api/v1/companies/registry/lookup/` endpointini chaqiradi.
+3. Backend Soliq yoki Statistika ochiq reyestri adapteriga murojaat qiladi.
+4. Tashqi javob normalizatsiya qilinadi va quyidagilar editable draft sifatida
+   qaytariladi:
+   - kompaniyaning rasmiy nomi;
+   - tashkiliy-huquqiy shakli;
+   - rahbar F.I.Sh.;
+   - yuridik manzil;
+   - ro'yxatdan o'tgan sana;
+   - QQS holati;
+   - faoliyat sohasi, mavjud bo'lsa.
+5. Foydalanuvchi avtomatik to'ldirilgan qiymatlarni tahrirlaydi va tasdiqlaydi.
+6. Asl registry payload `raw_tax_data` ichida audit uchun, foydalanuvchi
+   tasdiqlagan qiymatlar esa `CompanyProfile` maydonlarida saqlanadi.
+
+Registry adapter talablari:
+
+- `CompanyRegistryProvider` interfeysi va provider-specific adapterlar;
+- timeout 5 soniya, retry 1 marta;
+- natijani STIR bo'yicha 24 soat cache qilish;
+- provider ishlamasa onboarding bloklanmaydi, qo'lda kiritish taklif qilinadi;
+- `registry_status`: `not_checked`, `pending`, `verified`, `not_found`,
+  `failed`, `manual`;
+- lookup va user edit audit logga yoziladi;
+- tashqi ma'lumot foydalanuvchi tasdig'isiz yakuniy profilga yozilmaydi.
+
+#### Skip STIR va feature gating
+
+`STIRsiz davom etish` tugmasi `stir_skipped=True` holatini saqlaydi.
+STIRsiz foydalanuvchi:
+
+- tender qidiruvi va filtrlaridan;
+- umumiy AI tahlilidan;
+- kalkulyatordan;
+- watchlist va notificationlardan foydalanishi mumkin.
+
+Quyidagi rasmiy rekvizit talab qiladigan funksiyalar STIR kiritilmaguncha
+yopiq bo'ladi:
+
+- rasmiy ariza, kafolat xati va tijorat taklifini generatsiya qilish;
+- rasmiy tender paketiga export;
+- davlat reyestri bilan tasdiqlangan company badge;
+- STIR asosidagi competitor/company matching.
+
+Gate foydalanuvchiga sabab va `STIR qo'shish` actioni bilan ko'rsatiladi.
+STIR keyinroq profil sozlamalaridan qo'shilishi va registry lookup qayta
+ishga tushirilishi mumkin.
+
 ---
 
 ## 8. Tender Data Pipeline
@@ -366,6 +472,19 @@ Talablar:
 - portal HTML/API schema o'zgarishini aniqlash va alert berish;
 - dead-letter queue: 3 marta failed task monitoring va admin notification;
 - lot statusi va deadline yangilanishini kuzatish.
+
+Yakunlangan tenderlar alohida analytics pipeline orqali qayta ishlanadi:
+
+```text
+Completed lots -> normalize participants/winner/bids
+    -> calculate discount and win metrics
+    -> aggregate by lot/category/period
+    -> upsert CompetitorAnalytics
+```
+
+Analytics pipeline faqat ochiq va huquqiy qayta ishlatishga ruxsat etilgan
+ma'lumotlardan foydalanadi. Har bir agregat `source_count`, davr va
+`calculated_at` bilan kuzatiladi.
 
 ### 8.3. Freshness
 
@@ -618,6 +737,55 @@ eval natijasi bilan chiqariladi.
 - Prompt va natijalar `ModelInvocation` jadvalida saqlanadi (audit uchun),
   lekin PII filtrlangan holda.
 
+### 10.6. AI Document Generator va Inline Editor
+
+Document Generator faqat aktiv Business/Enterprise subscription va STIR
+mavjud kompaniya uchun ishlaydi. Company membership roli kamida `manager`
+bo'lishi kerak; `viewer` hujjatni faqat o'qiydi.
+
+Qo'llab-quvvatlanadigan boshlang'ich hujjatlar:
+
+- tenderda qatnashish arizasi;
+- kafolat xati;
+- tijorat taklifi;
+- texnik muvofiqlik xati;
+- erkin shakldagi tenderga oid rasmiy xat.
+
+Generation pipeline:
+
+```text
+Template + company snapshot + tender facts + user instructions
+    -> typed AI generation
+    -> policy/schema validation
+    -> sanitized HTML draft
+    -> inline editor
+    -> version save
+    -> PDF/DOCX export
+```
+
+Company context faqat zarur maydonlardan tuziladi:
+
+- STIR;
+- kompaniya nomi;
+- rahbar F.I.Sh.;
+- yuridik manzil;
+- tashkiliy shakl;
+- tender loti rekvizitlari.
+
+Talablar:
+
+- template versiyalanadi va aktiv versiya alohida belgilanadi;
+- generatsiya vaqtida company/tender context snapshot saqlanadi;
+- AI yaratgan matn `draft` statusida bo'ladi va avtomatik topshirilmaydi;
+- foydalanuvchi Rich Text Editor orqali inline tahrirlaydi;
+- backend HTML allowlist orqali sanitizatsiya qiladi;
+- autosave va optimistic locking uchun `updated_at`/version tekshiruvi;
+- har bir generatsiya va export audit logga yoziladi;
+- hujjat foydalanuvchi tasdig'isiz `approved` yoki `exported` bo'lmaydi;
+- generatsiya xatosi soxta hujjat bilan almashtirilmaydi;
+- mualliflik yoki tashqi shablon matni ruxsatsiz ko'chirilmaydi; shablonlar
+  ichki ishlab chiqilgan yoki litsenziyalangan bo'lishi shart.
+
 ---
 
 ## 11. Match Score va Tavsiya Mexanizmi
@@ -644,6 +812,43 @@ Talablar:
   bir xil tushuncha sifatida **aralashtirilmasligi**:
   - `match_score` — kompaniya profili va lot metadata bo'yicha hisoblangan;
   - `eligibility_score` — AI tahlili natijasi, hujjat va shartlarni o'qib chiqadi.
+
+### 11.1. Competitor Intelligence
+
+Competitor Intelligence Business/Enterprise tariflar uchun yakunlangan
+tenderlarning ochiq natijalaridan statistik dashboard yaratadi.
+
+Asosiy metrikalar:
+
+- lot yoki kategoriya bo'yicha TOP raqobatchilar;
+- ishtiroklar soni;
+- g'alabalar soni;
+- win rate;
+- o'rtacha taklif summasi;
+- boshlang'ich narxdan o'rtacha demping foizi;
+- hisoblangan davr va ma'lumot manbalari soni.
+
+Demping formulasi:
+
+```text
+discount_percent = ((start_price - winning_bid) / start_price) * 100
+```
+
+Faqat `start_price > 0` va tasdiqlangan winning bid mavjud natijalar
+agregatsiyaga kiradi. Manfiy yoki 100% dan yuqori qiymatlar data-quality
+tekshiruviga yuboriladi.
+
+Dashboard:
+
+- tanlangan lot uchun o'xshash kategoriya TOP raqobatchilari;
+- kategoriya va davr filtrlari;
+- rank, win rate va average discount;
+- oxirgi yangilanish va data freshness;
+- yetarli sample bo'lmasa `insufficient_data` holati.
+
+Bu statistik tahlil noqonuniy kelishuv yoki g'alaba kafolatini anglatmaydi.
+Har bir ko'rsatkich ochiq tarixiy ma'lumotga asoslangan estimate sifatida
+ko'rsatiladi.
 
 ---
 
@@ -765,13 +970,92 @@ orqali oldini olinadi.
 | Tarif | Imkoniyat | Narx (boshlang'ich) |
 |---|---|---|
 | Free | 4 ta AI tahlil/oy, asosiy qidiruv, kalkulyator | Bepul |
-| Pro | Cheksiz tahlil, keng filtr, notification, export | TBD (buxgalter bilan) |
-| Business/Enterprise | Team, competitor intelligence, yuqori limit | TBD |
+| Pro | Kengaytirilgan AI tahlil, filtrlar, notification | TBD (buxgalter bilan) |
+| Business | Document Generator, inline editor, competitor intelligence, team | TBD |
+| Enterprise | Business imkoniyatlari, yuqori limit, audit va priority support | TBD |
 
 "Cheksiz" tariflar ham abuse va provider xarajatlari uchun fair-use limitiga
-ega bo'ladi. Fair-use: Pro — 100 tahlil/oy, Enterprise — 500 tahlil/oy.
+ega bo'ladi. Boshlang'ich fair-use: Pro — 100 tahlil/oy, Business — 250
+tahlil/oy, Enterprise — 500 tahlil/oy. Limitlar real provider xarajatlari
+asosida qayta kalibrlanadi.
 
-### 14.2. CLICK
+Feature gating backend permission/service qatlamida bajariladi, faqat frontend
+tugmasini yashirish bilan cheklanmaydi:
+
+- Document Generator: Business/Enterprise + STIR + manager/owner;
+- Competitor Intelligence: Business/Enterprise;
+- team management: Business/Enterprise;
+- katta export va audit: Enterprise.
+
+### 14.2. Superadmin boshqaruvi
+
+Superadmin tarif emas, platforma darajasidagi alohida ishonchli rol. U
+Business yoki Enterprise obunasini sotib olmaydi va oddiy company membership
+bilan cheklanmaydi. Superadmin paneli yangi parallel billing yoki analytics
+backendini yaratmaydi; mavjud `users`, `companies`, `subscriptions`,
+`payments`, `UsageRecord`, AI invocation, scraping va monitoring servislarini
+bitta himoyalangan operatsion interfeysda boshqaradi.
+
+#### Asosiy imkoniyatlar
+
+| Modul | Superadmin amallari |
+|---|---|
+| Overview | user, company, active subscription, MRR, churn, AI usage, payment va system health statistikasi |
+| Userlar | qidirish, profil/company ko'rish, aktiv/blok holati, session revoke, support context |
+| Kompaniyalar | STIR/registry holati, a'zolar, tarif, usage, hujjat va tahlil agregatlari |
+| Tariflar | Free/Pro/Business/Enterprise feature, limit, narx va visibility konfiguratsiyasi |
+| Obunalar | activate, upgrade, downgrade, pause, cancel, expiry uzaytirish va entitlement preview |
+| To'lovlar | transaction, webhook, reconciliation, refund review va failed payment retry holati |
+| Business funksiyalar | Document Generator, competitor intelligence, team va export entitlement/usage nazorati |
+| AI operatsiyasi | provider/model holati, token va xarajat, failure rate, feature kill switch |
+| Tender pipeline | source, scrape run, freshness, retry/dead-letter va data-quality holati |
+| Kontent | document template versionlarini publish/unpublish qilish |
+| Support | user/company timeline, impersonation'siz read-only troubleshooting context |
+| Audit | kim, qachon, nima sababdan, oldingi va yangi qiymat bilan barcha kritik amallar |
+| System settings | feature flag, maintenance banner, rate/usage limit va notification template |
+
+Tarif yoki obunaga admin override kiritilganda:
+
+- mavjud subscription va entitlement service ishlatiladi;
+- majburiy `reason` va ixtiyoriy support ticket/reference yoziladi;
+- oldingi va yangi qiymat auditga tushadi;
+- moliyaviy holat tarixdan o'chirilmaydi;
+- webhook orqali tasdiqlangan payment yozuvi qo'lda tahrirlanmaydi;
+- bulk action preview va explicit confirmation talab qiladi.
+
+#### Real-time statistika
+
+Dashboard yangilanishi WebSocket majburiyatini anglatmaydi. MVP'da 30-60
+soniyalik polling va cache qilingan agregatlar yetarli; incident, payment yoki
+queue alertlari tezroq kanal orqali yangilanadi. Ko'rsatiladigan vaqt oralig'i
+`today`, `7d`, `30d`, `90d` va custom range:
+
+- yangi/aktiv userlar, DAU/WAU/MAU;
+- onboarding va STIR completion funnel;
+- tariflar bo'yicha active/trial/expired/cancelled subscriptionlar;
+- MRR, yangi revenue, failed payment, refund va churn;
+- Business feature adoption va limit sarfi;
+- AI request, token, provider cost, latency va failure rate;
+- tender, scraping freshness, queue depth va API health.
+
+Metrikada `updated_at`, timezone va data freshness ko'rinadi. Moliyaviy
+statistika reconciliation qilingan transactionlardan olinadi; taxminiy va
+tasdiqlangan qiymatlar aralashtirilmaydi.
+
+#### Ruxsat va xavfsizlik
+
+- superadmin route va API'lari `is_superuser`ning o'zi bilan cheklanmaydi:
+  MFA, qayta autentifikatsiya va capability-based admin permission ishlatiladi;
+- rollar: `support_viewer`, `billing_operator`, `operations_admin`,
+  `content_admin`, `superadmin`;
+- payment refund, subscription override, user block va feature kill switch
+  kabi amallar step-up authentication talab qiladi;
+- maxfiy maydonlar default maskalanadi, export va reveal auditlanadi;
+- impersonation MVP'da yo'q; keyin qo'shilsa user roziligi, banner, vaqt
+  limiti va to'liq audit majburiy;
+- superadmin o'z audit yozuvini o'chira yoki tahrirlay olmaydi.
+
+### 14.3. CLICK
 
 CLICK API **v2** (Merchant API) ishlatiladi.
 
@@ -821,7 +1105,7 @@ CLICK API **v2** (Merchant API) ishlatiladi.
 
 Payme va boshqa providerlar xuddi shu adapter pattern orqali keyin qo'shiladi.
 
-### 14.3. Huquqiy masalalar
+### 14.4. Huquqiy masalalar
 
 Biznes shakli va soliq rejimi professional buxgalter/yurist bilan
 tasdiqlanadi.
@@ -875,16 +1159,24 @@ Asosiy endpoint guruhlari:
 |-------|-------------------|------|
 | `/auth/` | login, register, otp, google, refresh, logout | Aralash |
 | `/companies/` | CRUD, members, onboarding | IsAuthenticated |
+| `/companies/registry/` | STIR lookup, refresh, confirm draft | IsAuthenticated |
 | `/tenders/` | list, detail, search, manual create | list=AllowAny, boshqasi=Auth |
 | `/analyses/` | start, status, result, history | IsAuthenticated |
+| `/documents/` | templates, generate, edit, versions, export | Business + STIR |
 | `/calculator/` | calculate | IsAuthenticated |
 | `/matches/` | list, feedback | IsAuthenticated |
 | `/notifications/` | preferences, history | IsAuthenticated |
 | `/subscriptions/` | plans, current, usage | IsAuthenticated |
 | `/payments/` | click webhook, history | Webhook=IP whitelist |
-| `/teams/` | members, tasks | IsAuthenticated (Enterprise) |
-| `/competitors/` | list, analytics | IsAuthenticated (Enterprise) |
-| `/admin/operations/` | scraping, monitoring, users | IsAdminUser |
+| `/teams/` | members, tasks | Business/Enterprise + membership role |
+| `/competitors/` | list, analytics | Business/Enterprise + membership |
+| `/admin/overview/` | KPI, revenue, usage, health, freshness | Admin capability + MFA |
+| `/admin/users/` | users, sessions, status, support timeline | Support/Admin capability |
+| `/admin/companies/` | company, STIR, members, usage, entitlement | Support/Admin capability |
+| `/admin/subscriptions/` | plans, overrides, lifecycle, usage | Billing capability + step-up |
+| `/admin/payments/` | transactions, webhook, reconciliation, refund review | Billing capability + step-up |
+| `/admin/operations/` | scraping, queues, AI provider, feature flags | Operations capability |
+| `/admin/audit/` | immutable admin action history | Superadmin/Auditor |
 
 ---
 
@@ -895,6 +1187,7 @@ Asosiy ekranlar:
 1. Landing va tariflar.
 2. Login/register (email, OTP, Google).
 3. Onboarding va company profile.
+   STIR lookup, editable draft va `STIRsiz davom etish` oqimini o'z ichiga oladi.
 4. Tender dashboard (qidiruv, filtrlar, ro'yxat).
 5. Tender detail va hujjatlar.
 6. AI analysis progress/result (real status, evidence, citation).
@@ -902,7 +1195,13 @@ Asosiy ekranlar:
 8. Saved searches va watchlist.
 9. Notification settings.
 10. Billing va to'lov tarixi.
-11. Enterprise: team va competitors.
+11. Business/Enterprise: team, competitors, audit va kengaytirilgan export.
+12. Business Document Editor: template tanlash, AI generation, inline edit,
+    autosave, preview va export.
+13. Competitor Intelligence Dashboard: TOP raqobatchilar, g'alabalar va
+    o'rtacha demping statistikasi.
+14. Superadmin Console: platform overview, user/company, tarif-obuna,
+    payment, Business usage, AI/scraping operatsiyasi va audit.
 
 Talablar:
 
@@ -941,6 +1240,8 @@ Production release bloklovchi talablar:
 | 14 | Audit log (admin harakatlari) | Middleware |
 | 15 | `AllowAny` faqat ommaviy endpointlarda (CI test) | Custom CI check |
 | 16 | `print()` debug yo'q — faqat `logging` moduli | Lint rule |
+| 17 | Superadmin uchun MFA, capability permission va step-up auth | Security test |
+| 18 | Admin kritik amallari immutable audit bilan | Audit integration test |
 
 Xavfsizlik muammosi topilganda AI yoki billing funksiyasini feature flag bilan
 tez o'chirish imkoniyati bo'ladi.
@@ -960,6 +1261,8 @@ Kuzatiladigan metrikalar:
 | Payment | Webhook success/failure rate, reconciliation delta |
 | Notification | Delivery rate, duplicate rate |
 | Database | Size, slow queries (>100ms), connection pool |
+| Business | Plan distribution, feature adoption, limit usage, churn |
+| Admin | Privileged action count, failed step-up, sensitive export/reveal |
 
 Vositalar:
 
@@ -987,6 +1290,14 @@ bo'lishi mumkin, lekin maxfiy payload (token, parol, OTP, API key)
 - calculator golden testlari (aniq raqamlar bilan);
 - webhook signature va idempotency testlari;
 - Celery retry va idempotency testlari;
+- STIR registry adapter timeout/cache/normalization testlari;
+- STIR skip va feature gate permission testlari;
+- document template version va generated document ownership testlari;
+- rich-text HTML sanitizatsiya va optimistic locking testlari;
+- competitor aggregation, demping formula va insufficient-data testlari;
+- superadmin capability, MFA/step-up va privilege escalation testlari;
+- subscription override, payment safety va immutable audit testlari;
+- dashboard metric formula/freshness testlari;
 - **`AllowAny` audit testi** — barcha viewlarni skanlab, kutilmagan
   `AllowAny` topilsa test fail bo'ladi.
 
@@ -996,6 +1307,7 @@ bo'lishi mumkin, lekin maxfiy payload (token, parol, OTP, API key)
 - kritik component testlari;
 - API error va loading testlari;
 - Playwright orqali login → onboarding → analysis → calculator E2E.
+- Playwright orqali STIR lookup/skip, document editor va Business gate E2E.
 
 ### CI quality gate
 
@@ -1056,21 +1368,92 @@ Deploy checklist:
 
 ## 21. Bosqichma-Bosqich Roadmap
 
+### 21.1. Kritik funksiyalar uchun 4 haftalik ishchi reja
+
+#### Hafta 1 — STIR onboarding
+
+- [ ] `CompanyRegistryProvider` interfeysi va birinchi Soliq/Statistika adapteri.
+- [ ] `CompanyProfile` registry, rahbar, manzil va skip maydonlari.
+- [ ] STIR lookup cache, timeout va normalization.
+- [ ] Editable draft confirm endpointi.
+- [ ] `STIRsiz davom etish` va backend feature gate.
+- [ ] Registry adapter va permission testlari.
+
+**Hafta natijasi:** foydalanuvchi STIR orqali draft oladi yoki STIRsiz qo'lda
+profil yaratib, cheklangan funksiyalar bilan tizimga kiradi.
+
+#### Hafta 2 — AI Document Generator backend
+
+- [ ] `TenderDocumentTemplate` va `GeneratedDocument` modellari/migratsiyasi.
+- [ ] Template versioning va admin boshqaruvi.
+- [ ] Company/tender context snapshot builder.
+- [ ] Async generation service va typed output validation.
+- [ ] Business + STIR + membership permission.
+- [ ] Generate, retrieve, update va version API'lari.
+
+**Hafta natijasi:** ruxsatli foydalanuvchi tender uchun xavfsiz draft hujjat
+yaratadi va backendda saqlaydi.
+
+#### Hafta 3 — Inline Editor va export
+
+- [ ] Rich Text Editor integratsiyasi.
+- [ ] HTML sanitizatsiya allowlist.
+- [ ] Autosave va optimistic locking.
+- [ ] Preview, DOCX/PDF export.
+- [ ] User approval va audit trail.
+- [ ] Frontend component va E2E testlar.
+
+**Hafta natijasi:** draft platforma ichida tahrirlanadi, tasdiqlanadi va
+eksport qilinadi.
+
+#### Hafta 4 — Competitor Intelligence
+
+- [ ] Yakunlangan tender participant/winner normalizatsiyasi.
+- [ ] `CompetitorAnalytics` modeli va aggregation task.
+- [ ] Rank, win rate va average discount hisoblari.
+- [ ] Lot/category/period API.
+- [ ] Business dashboard va freshness holati.
+- [ ] Data-quality va aggregation testlari.
+
+**Hafta natijasi:** Business foydalanuvchi lot yoki kategoriya bo'yicha
+tekshiriladigan TOP competitor statistikalarini ko'radi.
+
+#### Superadmin planning track
+
+- [ ] Superadmin information architecture va capability matrix.
+- [ ] KPI/revenue/usage metric dictionary va freshness qoidalari.
+- [ ] User/company support timeline va sensitive-data masking.
+- [ ] Tarif, entitlement va subscription override state transitionlari.
+- [ ] Payment/reconciliation amallari va step-up confirmation.
+- [ ] AI, scraping, queue va feature flag operations paneli.
+- [ ] Immutable admin audit va privileged-action alertlari.
+
+**Natija:** mavjud Business/subscription va operatsion servislar ustidan
+xavfsiz, auditlanadigan yagona control plane spetsifikatsiyasi tayyor bo'ladi.
+
 ### Bosqich 0 — Xavfsizlik stabilizatsiyasi va canonical plan
 
 - [ ] Eski hujjatlarni `docs/archive/` ga ko'chirish.
 - [ ] `analysis/views.py`: `AllowAny` → `IsAuthenticated` (barcha write endpointlar).
 - [ ] `_current_company()`: `settings.DEMO_MODE` tekshiruvini qo'shish.
+- [ ] Demo user lookupni mavjud `email`/`phone_number` identifikatori bilan
+  ishlaydigan va productionda butunlay o'chadigan qilish.
 - [ ] AI xatosida mock fallback → `analysis_status = FAILED` + xato xabari.
 - [ ] `settings.py`: model nomlarini `GEMINI_MODEL_ANALYSIS`, `GROQ_MODEL_CHAT` ga o'tkazish.
 - [ ] `views.py`: `settings.GEMINI_MODEL_ANALYSIS` ishlatish, URL'da hardcode olib tashlash.
 - [ ] `print()` debug → `logging.debug()` ga o'tkazish.
+- [ ] OTP generatsiyasini `secrets`ga o'tkazish; OTP qiymatini log va
+  production console outputdan olib tashlash.
 - [ ] `requirements.txt` ga `groq>=0.9,<1.0` qo'shish.
 - [ ] OAuth callback: tokenni URL'dan chiqarish, one-time code oqimiga o'tish.
 - [ ] Frontend private route guard'larni tiklash.
 - [ ] Backend va frontend lint/test muhitini barqaror qilish.
+- [ ] `.env.example`ga `DEMO_MODE=False` va target model settinglarini qo'shish.
 - [ ] Kalkulyator formulasini tasdiqlash va yagona backend servisiga ko'chirish.
 - [ ] `AllowAny` audit testini CI ga qo'shish.
+- [ ] Mavjud testlarni soxta `COMPLETED` natijadan `FAILED`/provider mock
+  contractiga o'tkazish va placeholder app testlarini real smoke testlar bilan
+  almashtirish.
 
 **Exit criteria:** kritik security finding yo'q, CI mavjud, auth va analysis
 ownership testlari o'tadi, `AllowAny` audit testi green.
@@ -1084,6 +1467,9 @@ ownership testlari o'tadi, `AllowAny` audit testi green.
 - [ ] Docker Compose (backend, worker, beat, redis, postgres).
 - [ ] Environment-specific settings (`local`, `staging`, `production`).
 - [ ] Core modellarni yangi schema bo'yicha migratsiya qilish.
+- [ ] `CompanyProfile.user` ownershipini `CompanyMember`ga migrate qilish.
+- [ ] Tender identity'ni `TenderSource + external_id` unique contractiga
+  migrate qilish va eski `lot_number`ni business field sifatida saqlash.
 - [ ] S3-compatible object storage abstraction.
 - [ ] Structured logging (`json-log-formatter`) va Sentry.
 
@@ -1099,6 +1485,7 @@ PostgreSQL + pgvector ishlaydi.
   `EXPLAIN ANALYZE` bilan benchmark qilish.
 - [ ] `ScrapeRun` monitoring va admin dashboard.
 - [ ] Document download, parsing va OCR pipeline.
+- [ ] Yakunlangan tenderlar, participantlar va winning bid ingestion.
 - [ ] Duplicate/upsert testlari.
 - [ ] Dead-letter queue va failed task monitoring.
 
@@ -1117,19 +1504,22 @@ tarzda yangilaydi, freshness SLO bajariladi.
 - [ ] Eval dataset (100 ta tender) va baseline metrikalar.
 - [ ] Provider fallback (Gemini → Groq) va cost monitoring.
 - [ ] `ModelInvocation` audit logging.
+- [ ] Versiyalangan `TenderDocumentTemplate` va async document generation.
+- [ ] Generated document context snapshot va HTML sanitizatsiya.
 
 **Exit criteria:** AI natijalari evidence bilan chiqadi, eval threshold'lardan
 o'tadi, JSON validation 100%.
 
 ### Bosqich 4 — Product flow va recommendation
 
-- [ ] To'liq onboarding oqimi.
+- [ ] To'liq onboarding: STIR lookup, editable draft va skip oqimi.
 - [ ] Company profile va membership CRUD.
 - [ ] Saved search/watchlist.
 - [ ] Deterministic match score (5 faktor).
 - [ ] User feedback mexanizmi.
 - [ ] Real analysis progress (WebSocket yoki polling).
 - [ ] Frontend test va code splitting.
+- [ ] Rich Text Editor, autosave va document export.
 
 **Exit criteria:** foydalanuvchi login'dan tavsiya va tahlilgacha to'liq oqimni
 demo bypass'siz bajaradi.
@@ -1161,12 +1551,28 @@ ishlaydi, Android va iOS'da Mini App sinab ko'rilgan.
 **Exit criteria:** test va production CLICK oqimi reconciliation bilan
 tekshirilgan, subscription lifecycle to'liq ishlaydi.
 
-### Bosqich 7 — Enterprise
+### Bosqich 6.1 — Superadmin Console
+
+- [ ] Alohida `/superadmin/` layout va capability-based route guard.
+- [ ] Real-time overview: growth, revenue, subscription, usage va health.
+- [ ] User/company qidiruvi, support timeline va account controls.
+- [ ] Tarif/feature/limit konfiguratsiyasi va entitlement preview.
+- [ ] Subscription lifecycle va xavfsiz manual override.
+- [ ] Payment, webhook va reconciliation operatsiyalari.
+- [ ] Business feature usage, AI cost va scraping operations.
+- [ ] Template publish/unpublish va system feature flags.
+- [ ] Immutable admin audit, MFA va step-up authentication.
+
+**Exit criteria:** superadmin barcha platforma operatsiyalarini mavjud domain
+servislari orqali boshqaradi; kritik action sababsiz yoki auditsiz bajarilmaydi.
+
+### Bosqich 7 — Business Intelligence va Enterprise
 
 - [ ] Team membership va role (owner, manager, analyst, viewer).
 - [ ] Task board (lot bo'yicha vazifalar).
-- [ ] Competitor dataset.
-- [ ] Competitor analytics.
+- [ ] MVP competitor dataset va completed tender ingestion'ni kengaytirish.
+- [ ] Lot/category/period kesimidagi advanced `CompetitorAnalytics`.
+- [ ] Business dashboardga trend, comparison va export qo'shish.
 - [ ] Enterprise permission va audit.
 
 ---
@@ -1176,6 +1582,7 @@ tekshirilgan, subscription lifecycle to'liq ishlaydi.
 MVP ichiga kiradi:
 
 - auth va company profile;
+- STIR registry lookup, editable onboarding draft va skip/feature gating;
 - bitta real tender source (`xarid.uzex.uz`);
 - PostgreSQL `ILIKE`/Django `__icontains` asosidagi tez qidiruv,
   `pg_trgm` GIN indekslari va asosiy filtrlar;
@@ -1183,8 +1590,12 @@ MVP ichiga kiradi:
 - evidence va citation bilan AI tahlil;
 - backend calculator (versiyalangan formula);
 - deterministic match score;
+- Business tarif uchun AI document generator va inline editor;
+- yakunlangan tenderlar asosidagi competitor analytics;
 - Telegram notification (lot va deadline);
 - Free va Pro usage tracking;
+- superadminning user/company, tarif-obuna, payment, usage, AI/scraping
+  monitoringi va auditlangan boshqaruv paneli;
 - staging va production monitoring.
 
 MVP'dan tashqarida:
@@ -1211,6 +1622,8 @@ MVP'dan tashqarida:
 | Tahlildan keyingi save/watch action | ≥ 30% |
 | Free → Pro conversion | ≥ 5% |
 | Monthly churn | ≤ 10% |
+| Business feature adoption | ≥ 30% active Business company |
+| Admin critical action audit coverage | 100% |
 
 ### Texnik SLO
 
@@ -1224,6 +1637,7 @@ MVP'dan tashqarida:
 | Payment webhook success | 99.9% |
 | Backup restore | Oylik drill |
 | Scraper error detection | ≤ 5 daqiqa |
+| Superadmin dashboard freshness | ≤ 60 soniya (operatsion), ≤ 5 daqiqa (biznes agregat) |
 
 ---
 
@@ -1248,6 +1662,10 @@ Ustuvorlik bo'yicha tartibda:
 | 13 | `requirements.txt` ga `groq`, `celery`, `redis` qo'shish | 🟢 P2 | §5.4, §10.2 |
 | 14 | `print()` → `logging` migratsiyasi | 🟢 P2 | §4.3, §18 |
 | 15 | LIKE qidiruv uchun `pg_trgm` + GIN indeks migration va benchmark | 🟢 P2 | §8.4 |
+| 16 | STIR registry adapter, editable draft va skip feature gate | 🔴 P0 | §7.4 |
+| 17 | Document template/generated document backend va Business gate | 🟡 P1 | §10.6 |
+| 18 | Completed tender competitor aggregation va dashboard API | 🟡 P1 | §11.1 |
+| 19 | Superadmin capability matrix, dashboard va audit contract | 🔴 P0 | §14.2 |
 
 ---
 
@@ -1283,6 +1701,10 @@ Muhim arxitektura qarorlari `docs/adr/` ichida ADR sifatida yuritiladi.
 | ADR-007 | Telegram Mini App authentication oqimi | Kutilmoqda |
 | ADR-008 | Embedding model va pgvector konfiguratsiyasi | Qabul qilingan |
 | ADR-009 | CLICK API v2 integratsiya protokoli | Kutilmoqda |
+| ADR-010 | STIR registry provider, cache va user-confirmed draft | Qabul qilingan |
+| ADR-011 | Document generator template/version/editor modeli | Kutilmoqda |
+| ADR-012 | Competitor analytics aggregation va data quality | Kutilmoqda |
+| ADR-013 | Superadmin capability, step-up auth va immutable audit | Kutilmoqda |
 
 Ushbu `Plan.md` strategiyani belgilaydi. Implementatsiya tafsiloti ADR,
 OpenAPI schema va issue trackerda yuritiladi.
@@ -1312,5 +1734,6 @@ Hozirgi va rejalashtirilgan Python dependencylar:
 | beautifulsoup4 | ≥4.12 | Bosqich 2 | HTML parsing |
 | pdfplumber | ≥0.11 | Bosqich 2 | PDF parsing |
 | python-docx | ≥1.1 | Bosqich 2 | DOCX parsing |
+| bleach | ≥6.1 | Hafta 3 | Rich-text HTML sanitizatsiya |
 | aiogram | ≥3.7 | Bosqich 5 | Telegram bot |
 | sentry-sdk[django] | ≥2.0 | Bosqich 1 | Error tracking |

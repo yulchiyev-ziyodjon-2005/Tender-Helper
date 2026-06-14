@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Building2, Save, ArrowLeft, Building, Hash, CreditCard, Tag, Loader2, AlertCircle } from 'lucide-react';
 import apiClient from '../api/client';
@@ -11,7 +11,7 @@ export default function SettingsPage() {
   const [isSaved, setIsSaved] = useState(false);
   const [error, setError] = useState(null);
 
-  const loadProfile = async () => {
+  const loadProfile = useCallback(async () => {
     setIsLoading(true);
     try {
       const { data } = await apiClient.get('/company/profile/');
@@ -38,11 +38,12 @@ export default function SettingsPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    loadProfile();
-  }, []);
+    const loadTimer = setTimeout(loadProfile, 0);
+    return () => clearTimeout(loadTimer);
+  }, [loadProfile]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;

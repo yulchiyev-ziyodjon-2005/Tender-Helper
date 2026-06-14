@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import apiClient from '../api/client';
 import useAuthStore from '../store/authStore';
 
 export default function GoogleCallbackPage() {
@@ -8,18 +9,29 @@ export default function GoogleCallbackPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const access = params.get('access');
-    const refresh = params.get('refresh');
-    const isNewUser = params.get('is_new_user') === '1';
-    const next = params.get('next') || '/dashboard';
+    const code = params.get('code');
 
-    if (!access || !refresh) {
-      navigate('/login?google_error=Google login tokenlari topilmadi', { replace: true });
+    if (!code) {
+      navigate('/login?google_error=Google login kodi topilmadi', { replace: true });
       return;
     }
 
-    login({ access, refresh }, null);
-    navigate(isNewUser ? '/onboarding' : next, { replace: true });
+    let active = true;
+    apiClient.post('/auth/google/exchange/', { code })
+      .then(({ data }) => {
+        if (!active) return;
+        login(data.tokens, data.user);
+        navigate(data.is_new_user ? '/onboarding' : (data.next || '/dashboard'), { replace: true });
+      })
+      .catch(() => {
+        if (active) {
+          navigate('/login?google_error=Google login kodi yaroqsiz yoki muddati tugagan', { replace: true });
+        }
+      });
+
+    return () => {
+      active = false;
+    };
   }, [login, navigate]);
 
   return (

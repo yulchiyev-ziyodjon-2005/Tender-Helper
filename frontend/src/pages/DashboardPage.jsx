@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, BarChart3, Calculator, LogOut, SlidersHorizontal, Calendar, Building2, CheckCircle2, Loader2, AlertCircle, Settings, ArrowRight } from 'lucide-react';
 import useAuthStore from '../store/authStore';
@@ -6,6 +6,14 @@ import ThemeToggle from '../components/ui/ThemeToggle';
 import LanguageSwitcher from '../components/ui/LanguageSwitcher';
 import apiClient from '../api/client';
 import { useTranslation } from 'react-i18next';
+
+function extractLotNumber(query) {
+  if (query.includes('http')) {
+    const match = query.match(/\d+$/) || query.match(/\d+/);
+    if (match) return match[0];
+  }
+  return query;
+}
 
 export default function DashboardPage() {
   const { t } = useTranslation();
@@ -22,16 +30,7 @@ export default function DashboardPage() {
   const [priceMax, setPriceMax] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
 
-  // Extract lot number from URL if pasted
-  const extractLotNumber = (query) => {
-    if (query.includes('http')) {
-      const match = query.match(/\d+$/) || query.match(/\d+/);
-      if (match) return match[0];
-    }
-    return query;
-  };
-
-  const fetchTenders = async (params = {}) => {
+  const fetchTenders = useCallback(async (params = {}) => {
     setIsLoading(true);
     setError(null);
     try {
@@ -48,12 +47,12 @@ export default function DashboardPage() {
       const url = `/tenders/?${queryParams.toString()}`;
       const { data } = await apiClient.get(url);
       setTenders(Array.isArray(data) ? data : (data.results || []));
-    } catch (err) {
+    } catch {
       setError(t('error_loading'));
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [t]);
 
   // Real-time search with debounce
   useEffect(() => {
@@ -67,7 +66,7 @@ export default function DashboardPage() {
       });
     }, 500); // 500ms debounce
     return () => clearTimeout(delayDebounceFn);
-  }, [searchQuery, selectedPlatform, priceMin, priceMax, selectedCategory]);
+  }, [fetchTenders, searchQuery, selectedPlatform, priceMin, priceMax, selectedCategory]);
 
   const handleAnalyze = (e) => {
     e.preventDefault();
@@ -82,10 +81,6 @@ export default function DashboardPage() {
 
   const formatMoney = (amount) => {
     return new Intl.NumberFormat('uz-UZ').format(amount) + ' UZS';
-  };
-
-  const formatDate = (dateStr) => {
-    return new Date(dateStr).toLocaleDateString('uz-UZ', { day: '2-digit', month: '2-digit', year: 'numeric' });
   };
 
   const getPlatformLabel = (source) => {

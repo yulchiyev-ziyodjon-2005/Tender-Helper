@@ -25,7 +25,9 @@ Rejalashtirilgan imkoniyatlar:
 - evidence va citation bilan RAG tahlili;
 - Telegram bot va Mini App;
 - CLICK billing;
-- team va competitor intelligence.
+- Business tarifida AI hujjat generatori va inline editor;
+- team va competitor intelligence;
+- user, obuna, payment va operatsiyalar uchun Superadmin Console.
 
 ## Texnologiyalar
 
@@ -55,6 +57,8 @@ TenderHelper/
 |   |-- API.md
 |   `-- archive/          # Eski reja va texnik topshiriqlar
 |-- Plan.md               # Canonical strategik va texnik reja
+|-- IMPLEMENTATION_PLAN.md # Work package va acceptance criteria
+|-- DESIGN.md             # Canonical UI/UX spetsifikatsiyasi
 `-- README.md
 ```
 
@@ -63,7 +67,7 @@ TenderHelper/
 Talablar:
 
 - Python 3.11+
-- Node.js 18+
+- Node.js 20.19+ yoki 22.12+
 
 Backend:
 
@@ -126,8 +130,14 @@ python manage.py test
 ## Hujjatlar
 
 - [Asosiy reja](Plan.md)
-- [API hujjati](docs/API.md)
+- [Implementation reja](IMPLEMENTATION_PLAN.md)
+- [UI/UX dizayn spetsifikatsiyasi](DESIGN.md)
+- [Amaldagi demo API snapshoti](docs/API.md)
 - [Tarixiy hujjatlar](docs/archive/README.md)
+
+`Plan.md` strategik ustuvor manba. `IMPLEMENTATION_PLAN.md` bajarilish
+contractini, `DESIGN.md` target interfeysni, `docs/API.md` esa hozir kodda
+mavjud demo endpointlarni ko'rsatadi.
 
 ## Litsenziya
 

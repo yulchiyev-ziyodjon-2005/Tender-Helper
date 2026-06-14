@@ -5,13 +5,11 @@ TenderHelper — OTP Service
 MVP: console'ga chiqarish (real SMS keyinroq — Eskiz.uz).
 """
 
-import random
 import logging
-from datetime import timedelta
+import secrets
 
 from django.conf import settings
 from django.core.cache import cache
-from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +43,7 @@ def generate_otp(phone_number):
         return None
 
     # OTP generatsiya
-    otp = ''.join([str(random.randint(0, 9)) for _ in range(OTP_LENGTH)])
+    otp = ''.join(str(secrets.randbelow(10)) for _ in range(OTP_LENGTH))
 
     # Cache'ga saqlash (3 daqiqa amal muddati)
     expiry_seconds = OTP_EXPIRY_MINUTES * 60
@@ -110,13 +108,7 @@ def send_otp_sms(phone_number, otp):
 
     if provider == 'console':
         # ──── Development: console'ga chiqarish ────
-        print(f"\n{'='*50}")
-        print(f"  OTP SMS -- TenderHelper")
-        print(f"  Raqam: {phone_number}")
-        print(f"  Kod:   {otp}")
-        print(f"  Amal muddati: {OTP_EXPIRY_MINUTES} daqiqa")
-        print(f"{'='*50}\n")
-        logger.info(f"OTP sent to console for {phone_number}: {otp}")
+        logger.info("OTP accepted by console provider for %s", phone_number)
         return True
 
     elif provider == 'eskiz':

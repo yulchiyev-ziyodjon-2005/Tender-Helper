@@ -180,6 +180,12 @@ class EmailRegisterSerializer(serializers.ModelSerializer):
         CompanyProfile.objects.create(
             user=user,
             onboarding_answers=onboarding_answers,
+            registry_source=CompanyProfile.RegistrySource.MANUAL,
+            registry_status=(
+                CompanyProfile.RegistryStatus.MANUAL
+                if company_data['stir']
+                else CompanyProfile.RegistryStatus.NOT_CHECKED
+            ),
             **company_data,
         )
         return user

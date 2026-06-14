@@ -1,42 +1,35 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Calculator, AlertTriangle, TrendingDown, TrendingUp, Info, ExternalLink } from 'lucide-react';
 import apiClient from '../../api/client';
+
+const VAT_RATE = 0.12;
+const UZEX_RATE = 0.0015;
+const GUARANTEE_RATE = 0.03;
 
 export default function SmartCalculator({ tenderPrice = 0, analysisId }) {
   // Inputs
   const [cost, setCost] = useState('');
   
-  // Settings
-  const vatRate = 0.12; // 12%
-  const uzexRate = 0.0015; // 0.15%
-  const guaranteeRate = 0.03; // 3% zakalat
-  
-  // Results
-  const [results, setResults] = useState({
-    vat: 0,
-    uzexFee: 0,
-    guarantee: 0,
-    totalCost: 0,
-    profit: 0,
-    profitMargin: 0,
-    stopLoss: 0
-  });
-
-  useEffect(() => {
-    const rawCost = Number(cost.replace(/[^0-9]/g, '')) || 0;
+  const rawCost = useMemo(
+    () => Number(cost.replace(/[^0-9]/g, '')) || 0,
+    [cost],
+  );
+  const results = useMemo(() => {
     const winPrice = tenderPrice; 
 
-    const vat = rawCost * vatRate;
-    const uzexFee = winPrice * uzexRate;
-    const guarantee = winPrice * guaranteeRate;
+    const vat = rawCost * VAT_RATE;
+    const uzexFee = winPrice * UZEX_RATE;
+    const guarantee = winPrice * GUARANTEE_RATE;
     
     const totalCost = rawCost + vat + uzexFee;
     const profit = winPrice - totalCost;
     const profitMargin = winPrice > 0 ? (profit / winPrice) * 100 : 0;
     const stopLoss = totalCost;
 
-    setResults({ vat, uzexFee, guarantee, totalCost, profit, profitMargin, stopLoss });
+    return { vat, uzexFee, guarantee, totalCost, profit, profitMargin, stopLoss };
+  }, [rawCost, tenderPrice]);
 
+  useEffect(() => {
     // Sync with backend if analysisId is provided
     if (analysisId && rawCost > 0) {
       const syncDebounce = setTimeout(() => {
@@ -49,7 +42,7 @@ export default function SmartCalculator({ tenderPrice = 0, analysisId }) {
       }, 1000);
       return () => clearTimeout(syncDebounce);
     }
-  }, [cost, tenderPrice, analysisId]);
+  }, [rawCost, analysisId]);
 
   const formatMoney = (amount) => {
     return new Intl.NumberFormat('uz-UZ', { style: 'currency', currency: 'UZS', maximumFractionDigits: 0 }).format(amount);

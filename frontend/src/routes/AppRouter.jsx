@@ -21,18 +21,16 @@ import SettingsPage from '../pages/SettingsPage';
  * Himoyalangan yo'nalish — faqat autentifikatsiya qilingan foydalanuvchilar
  */
 function PrivateRoute({ children }) {
-  return children; // Temporarily allow access without auth
-  // const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  // return isAuthenticated ? children : <Navigate to="/login" replace />;
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  return isAuthenticated ? children : <Navigate to="/login" replace />;
 }
 
 /**
  * Ochiq yo'nalish — faqat autentifikatsiya qilinmaganlar
  */
 function PublicRoute({ children }) {
-  return children; // Temporarily allow access without auth
-  // const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  // return !isAuthenticated ? children : <Navigate to="/dashboard" replace />;
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  return !isAuthenticated ? children : <Navigate to="/dashboard" replace />;
 }
 
 export default function AppRouter() {
