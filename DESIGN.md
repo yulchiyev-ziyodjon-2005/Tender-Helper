@@ -693,11 +693,52 @@ Stepper komponenti yuqorida ko'rinadi, foydalanuvchi qaysi bosqichda ekanligi an
 │                                                             │
 │  [🧮 Kalkulyator] [📤 PDF sifatida yuklab olish PRO🔒]      │
 └─────────────────────────────────────────────────────────────┘
+
+### 7.3. Shaxsiy AI bilan Chat (Savol-Javob) — `/analyses/{id}/chat`
+
+AI tahlil oynasida alohida "Chat" tab'i orqali tender bo'yicha Groq (Llama 3.3) bilan jonli muloqot qilish mumkin.
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  [📋 Xulosa]  [💬 AI bilan Chat]  [📄 Hujjatlar]             │
+│                                                             │
+│  TENDER MENTOR AI (Groq Llama 3.3)                          │
+│  ─────────────────────────────────────────────────────────  │
+│                                                             │
+│  🤖 AI: Salom! Ushbu tender (Lot №24110012) bo'yicha        │
+│  qanday savollaringiz bor? Hujjatlarning barchasi bilan     │
+│  tanishib chiqdim.                                          │
+│                                                             │
+│  👤 Siz: "Texnik topshiriqda server parametrlari qanday     │
+│  ko'rsatilgan?"                                             │
+│                                                             │
+│  🤖 AI: Texnik topshiriqning 4-betida quyidagicha keltiril- │
+│  gan: "Kamida 32GB RAM va 1TB NVMe SSD". Lekin operatsion   │
+│  tizim aniq yozilmagan. Buyurtmachiga so'rov yuborishni     │
+│  tavsiya qilaman.                                           │
+│  [📄 Manba: Texnik topshiriq.pdf, 4-bet]                    │
+│                                                             │
+│  👤 Siz: "Agar men 15 kunda yetkazib bersam bo'ladimi?"     │
+│                                                             │
+│  🤖 AI: Yo'q, shartnoma loyihasining 2.1-bandida aniq qilib │
+│  "10 bank ish kuni ichida" deyilgan. 15 kun kechikish       │
+│  jarimaga olib keladi (kuniga 0.5%).                        │
+│                                                             │
+│  ─────────────────────────────────────────────────────────  │
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │ 💬 Savolingizni yozing...                       [▶]   │  │
+│  └───────────────────────────────────────────────────────┘  │
+│  Tezkor savollar:                                           │
+│  [Jarimalar bormi?] [QQS qanday to'lanadi?]                 │
+└─────────────────────────────────────────────────────────────┘
+```
 ```
 
 ---
 
 ## 8. Kalkulyator — `/calculator`
+
+Kompaniyaning shaxsiy obuna darajasiga mos (kompaniya xarajatlari, marja qoidalari o'zida saqlanadi).
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -725,12 +766,12 @@ Stepper komponenti yuqorida ko'rinadi, foydalanuvchi qaysi bosqichda ekanligi an
 │  │                             │ │                        │ │
 │  │  Maqsad foyda marjasi       │ │  SOF FOYDA:            │ │
 │  │  [____15___] %              │ │  🟢 27,000,000 so'm    │ │
-│  │                             │ │  Marja: 15.4%          │ │
-│  │  Zakalat: [__3__]%          │ │                        │ │
-│  │  (Qaytariladigan)           │ │  Cash talab:           │ │
-│  │                             │ │  7,500,000 so'm (oldin)│ │
-│  │  [🔄 Hisoblash]             │ │                        │ │
-│  │                             │ │  Formula v1.2          │ │
+│  │  [💾 Marjani profilga saqla]│ │  Marja: 15.4%          │ │
+│  │                             │ │                        │ │
+│  │  Zakalat: [__3__]%          │ │  Cash talab:           │ │
+│  │  (Qaytariladigan)           │ │  7,500,000 so'm (oldin)│ │
+│  │                             │ │                        │ │
+│  │  [🔄 Hisoblash]             │ │  Formula v1.2          │ │
 │  └─────────────────────────────┘ │  [ℹ️ Formula batafsil] │ │
 │                                   └────────────────────────┘ │
 │                                                             │
@@ -768,6 +809,42 @@ Stepper komponenti yuqorida ko'rinadi, foydalanuvchi qaysi bosqichda ekanligi an
 │  │    Yangi natijalar: 3 ta                              │  │
 │  │    [Yangilab ko'rish] [🔔 Bildirish sozlash] [×Ochir]│  │
 │  └──────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 9.5. Qo'lda Tender va Fayl Qo'shish (Upload) — Modal yoki `/tenders/new`
+
+Tizimda yo'q bo'lgan, yoki xususiy korporativ tenderlarni qo'lda fayl yuklash orqali tahlil qilish interfeysi.
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  📤 Yangi tender va fayllarni tahlil qilish                 │
+│                                                             │
+│  1. TENDER MA'LUMOTLARI                                     │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │  Tender/Loyiha nomi *                                │  │
+│  │  [_______________________________________]           │  │
+│  │                                                      │  │
+│  │  Buyurtmachi            Boshlang'ich narx             │  │
+│  │  [_______________]      [_______________] so'm       │  │
+│  └──────────────────────────────────────────────────────┘  │
+│                                                             │
+│  2. HUJJATLARNI YUKLASH (PDF, DOCX)                         │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │                                                      │  │
+│  │       📁 Fayllarni shu yerga tashlang yoki           │  │
+│  │                [Fayl tanlash]                        │  │
+│  │                                                      │  │
+│  │  Max: 50MB. Ruxsat etilgan formatlar: .pdf, .docx     │  │
+│  └──────────────────────────────────────────────────────┘  │
+│                                                             │
+│  Yuklangan fayllar:                                         │
+│  📄 Shartnoma_loyihasi.docx (1.2 MB)  [✅] [×]             │
+│  📄 Texnik_topshiriq.pdf    (3.5 MB)  [✅] [×]             │
+│                                                             │
+│  [Bekor qilish]                     [Tahlilni boshlash 🚀]  │
 └─────────────────────────────────────────────────────────────┘
 ```
 

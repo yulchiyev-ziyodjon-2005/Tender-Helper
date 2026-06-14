@@ -378,6 +378,76 @@ MVP maqsadi:
 | Scraper xatosi monitoring'ga chiqishi | ≤ 5 daqiqa |
 | Hujjat yuklash va parsing | ≤ 15 daqiqa (lotdan keyin) |
 
+### 8.4. LIKE qidiruv strategiyasi
+
+MVP tender qidiruvining asosiy mexanizmi PostgreSQL `LIKE`/`ILIKE`
+operatorlari bo'ladi. Django ORM'da bu `__icontains` lookup orqali amalga
+oshiriladi:
+
+```python
+TenderLot.objects.filter(
+    Q(title__icontains=query)
+    | Q(buyer_name__icontains=query)
+    | Q(lot_number__icontains=query)
+)
+```
+
+Qidiruv quyidagi maydonlarda ishlaydi:
+
+- `title`;
+- `buyer_name`;
+- `lot_number`;
+- `category`;
+- zarur bo'lsa `region`.
+
+Talablar:
+
+- foydalanuvchi matni ORM parametrizatsiyasi orqali uzatiladi, raw SQL string
+  concatenation ishlatilmaydi;
+- qidiruv case-insensitive bo'lishi uchun PostgreSQL `ILIKE` ishlatiladi;
+- bo'sh yoki faqat whitespace query barcha aktiv lotlarni pagination bilan
+  qaytaradi;
+- qidiruv `status=active` filtri va region, category, narx, platforma,
+  deadline filtrlariga birga qo'llanadi;
+- minimal query uzunligi UI'da 2 belgi;
+- frontend debounce: 300-500 ms;
+- natijalar default 20 ta, maksimal 100 ta sahifalanadi;
+- natijalar `deadline`, `posted_date` yoki `start_price` bo'yicha saralanadi.
+
+#### Tezlik uchun PostgreSQL indekslari
+
+Oddiy B-tree indeks `%query%` ko'rinishidagi substring qidiruvni samarali
+tezlashtirmaydi. Shuning uchun production va staging PostgreSQL bazalarida
+`pg_trgm` extension va GIN trigram indekslar ishlatiladi:
+
+```sql
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
+CREATE INDEX tender_lot_title_trgm_idx
+ON tender_lots USING gin (title gin_trgm_ops);
+
+CREATE INDEX tender_lot_buyer_name_trgm_idx
+ON tender_lots USING gin (buyer_name gin_trgm_ops);
+
+CREATE INDEX tender_lot_lot_number_trgm_idx
+ON tender_lots USING gin (lot_number gin_trgm_ops);
+```
+
+`status`, `deadline`, `platform_source`, `region` va `category` uchun oddiy
+B-tree indekslar saqlanadi. Indekslar Django migration orqali yaratiladi va
+`EXPLAIN ANALYZE` bilan tekshiriladi.
+
+Performance maqsadi:
+
+| Dataset | LIKE qidiruv p95 |
+|---------|------------------|
+| 100 ming lotgacha | ≤ 300 ms |
+| 1 million lotgacha | ≤ 500 ms |
+
+MVP'da Elasticsearch yoki alohida search engine ishlatilmaydi. Semantic
+RAG qidiruvi tender hujjatlari ichidagi AI kontekstni topish uchun ishlaydi;
+foydalanuvchining lot qidiruvi esa avval `ILIKE` + `pg_trgm` orqali bajariladi.
+
 ---
 
 ## 9. Hujjatlarni Qayta Ishlash va RAG
@@ -792,6 +862,8 @@ tasdiqlanadi.
 ```
 
 - Cursor yoki page pagination (default 20, max 100).
+- Tender matnli qidiruvi `GET /api/v1/tenders/?search=<query>` orqali,
+  Django `__icontains` va PostgreSQL `ILIKE` asosida bajariladi.
 - Idempotency key: analysis start, payment va notification.
 - Request ID (`X-Request-ID` header) va structured logging.
 - UTC storage, UI'da `Asia/Tashkent`.
@@ -1007,6 +1079,7 @@ ownership testlari o'tadi, `AllowAny` audit testi green.
 
 - [ ] PostgreSQL 16 konfiguratsiyasi va migratsiya.
 - [ ] pgvector extension o'rnatish va `vector(768)` column qo'shish.
+- [ ] `pg_trgm` extension va tender LIKE qidiruvi uchun GIN indekslar.
 - [ ] Redis va Celery worker/beat setup.
 - [ ] Docker Compose (backend, worker, beat, redis, postgres).
 - [ ] Environment-specific settings (`local`, `staging`, `production`).
@@ -1022,6 +1095,8 @@ PostgreSQL + pgvector ishlaydi.
 - [ ] Portal huquqiy/texnik tekshiruvi (ADR-006).
 - [ ] Source adapter interfeysi (`BaseSourceAdapter`).
 - [ ] `xarid.uzex.uz` birinchi real portal integratsiyasi.
+- [ ] `ILIKE` qidiruvini title, buyer, lot number va category bo'yicha
+  `EXPLAIN ANALYZE` bilan benchmark qilish.
 - [ ] `ScrapeRun` monitoring va admin dashboard.
 - [ ] Document download, parsing va OCR pipeline.
 - [ ] Duplicate/upsert testlari.
@@ -1102,7 +1177,8 @@ MVP ichiga kiradi:
 
 - auth va company profile;
 - bitta real tender source (`xarid.uzex.uz`);
-- qidiruv va asosiy filtrlar;
+- PostgreSQL `ILIKE`/Django `__icontains` asosidagi tez qidiruv,
+  `pg_trgm` GIN indekslari va asosiy filtrlar;
 - hujjat parsing (PDF, DOCX);
 - evidence va citation bilan AI tahlil;
 - backend calculator (versiyalangan formula);
@@ -1142,6 +1218,7 @@ MVP'dan tashqarida:
 |-----|--------|
 | API availability | 99.5% (MVP) |
 | Oddiy API p95 latency | ≤ 500 ms |
+| Tender LIKE qidiruv p95 | ≤ 300 ms (100 ming lotgacha) |
 | AI task completion p95 | ≤ 15 soniya (hujjat hajmiga qarab) |
 | Yangi lot freshness | ≤ 45 daqiqa |
 | Payment webhook success | 99.9% |
@@ -1170,6 +1247,7 @@ Ustuvorlik bo'yicha tartibda:
 | 12 | PostgreSQL/Celery migratsiya uchun issue'lar ochish | 🟢 P2 | §20 |
 | 13 | `requirements.txt` ga `groq`, `celery`, `redis` qo'shish | 🟢 P2 | §5.4, §10.2 |
 | 14 | `print()` → `logging` migratsiyasi | 🟢 P2 | §4.3, §18 |
+| 15 | LIKE qidiruv uchun `pg_trgm` + GIN indeks migration va benchmark | 🟢 P2 | §8.4 |
 
 ---
 

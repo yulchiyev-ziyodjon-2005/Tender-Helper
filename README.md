@@ -1,148 +1,134 @@
-# 🏛️ TenderHelper AI
+# TenderHelper AI
 
-**O'zbekiston kichik va o'rta biznesi uchun AI Tender Mentor platformasi**
+O'zbekiston kichik va o'rta bizneslari uchun AI Tender Mentor platformasi.
 
-[![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://python.org)
-[![Django](https://img.shields.io/badge/Django-5.0+-green.svg)](https://djangoproject.com)
-[![React](https://img.shields.io/badge/React-18+-61DAFB.svg)](https://react.dev)
-[![License](https://img.shields.io/badge/License-Private-red.svg)]()
+TenderHelper davlat va korporativ tenderlarni topish, hujjatlarni tushunish,
+xavflarni aniqlash va ishtirok narxini hisoblashga yordam beradi.
 
----
+> Loyiha hozir demo/MVP prototip bosqichida. Production arxitekturasi,
+> xavfsizlik talablari va roadmap [`Plan.md`](Plan.md) da belgilangan.
 
-## 📋 Loyiha Haqida
+## Asosiy Imkoniyatlar
 
-TenderHelper AI — davlat xaridlari va korporativ tenderlarda qatnashish jarayonini soddalashtiruvchi, sun'iy intellektga asoslangan mentor platformasi.
+- tender lotlarini qidirish va filtrlash;
+- tender hujjatlarini AI orqali tahlil qilish;
+- murakkab talablarni oddiy tilda tushuntirish;
+- red flag va yetishmayotgan hujjatlarni aniqlash;
+- kompaniya profiliga moslik bahosi;
+- QQS, komissiya, Stop-Loss va foyda kalkulyatori;
+- ko'p tilli, dark mode'li responsive interfeys.
 
-### Muammo
-Kichik tadbirkorlar tender hujjatlarining murakkab yuridik tilini tushunmaydi, kerakli hujjatlarni bilmaydi, narx strategiyasida xato qiladi va yashirin shartlardan zarar ko'radi.
+Rejalashtirilgan imkoniyatlar:
 
-### Yechim
-- 🔍 **AI Tender Tahlili** — tender matnini oddiy tilga o'giradi
-- 📋 **Hujjatlar Checklist** — korxona turiga mos hujjatlar ro'yxati
-- ⚠️ **Risk Aniqlash** — yashirin shartlar va Red Flag signallar
-- 💰 **Smart Kalkulyator** — QQS, operator haqi, Stop-Loss narx hisoblash
-- 👥 **Jamoaviy Ishlash** — Enterprise uchun team mode
+- real portal scraping;
+- PostgreSQL, pgvector, Redis va Celery;
+- evidence va citation bilan RAG tahlili;
+- Telegram bot va Mini App;
+- CLICK billing;
+- team va competitor intelligence.
 
----
+## Texnologiyalar
 
-## 🛠️ Tech Stack
+| Qatlam | Hozirgi holat | Target |
+|---|---|---|
+| Frontend | React 19, Vite, Tailwind CSS | PWA va Telegram Mini App |
+| Backend | Django 5, Django REST Framework | Async worker arxitekturasi |
+| Database | SQLite | PostgreSQL va pgvector |
+| AI | Google Gemini prototipi | Provider gateway, Gemini va Groq |
+| Auth | JWT, OTP, Google OAuth | Xavfsiz cookie yoki one-time code |
+| Queue | Yo'q | Redis va Celery |
 
-| Qatlam | Texnologiya |
-|--------|-------------|
-| **Frontend** | React 18 + Vite + Tailwind CSS |
-| **Backend** | Django 5.0 + Django REST Framework |
-| **Database** | SQLite (MVP) → PostgreSQL (Production) |
-| **AI** | Google Gemini API |
-| **Auth** | JWT + Phone OTP + Google OAuth |
-| **Mobile** | PWA (Progressive Web App) |
+## Repository Tuzilmasi
 
----
-
-## 🚀 O'rnatish
-
-### Talablar
-- Python 3.11+
-- Node.js 18+
-- Git
-
-### 1. Repozitoriyani klonlash
-```bash
-git clone <repo-url>
-cd TenderHelper
+```text
+TenderHelper/
+|-- backend/              # Django REST API
+|   |-- users/            # Auth va foydalanuvchilar
+|   |-- companies/        # Kompaniya profillari
+|   |-- tenders/          # Tenderlar va scraping
+|   |-- analysis/         # AI tahlil va kalkulyator
+|   |-- subscriptions/    # Tarif va billing
+|   |-- teams/            # Enterprise team
+|   `-- competitors/      # Competitor intelligence
+|-- frontend/             # React PWA
+|-- docs/
+|   |-- API.md
+|   `-- archive/          # Eski reja va texnik topshiriqlar
+|-- Plan.md               # Canonical strategik va texnik reja
+`-- README.md
 ```
 
-### 2. Backend sozlash
-```bash
-# Virtual environment yaratish
+## Local Ishga Tushirish
+
+Talablar:
+
+- Python 3.11+
+- Node.js 18+
+
+Backend:
+
+```powershell
 cd backend
-python -m venv venv
-
-# Aktivlashtirish (Windows)
-venv\Scripts\activate
-
-# Aktivlashtirish (macOS/Linux)
-source venv/bin/activate
-
-# Dependencies o'rnatish
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-
-# .env faylni sozlash
-cp ../.env.example ../.env
-# .env faylni o'z API kalitlaringiz bilan to'ldiring
-
-# Migratsiyalar
 python manage.py migrate
-
-# Superuser yaratish
-python manage.py createsuperuser
-
-# Server ishga tushirish
 python manage.py runserver
 ```
 
-### 3. Frontend sozlash
-```bash
+Frontend:
+
+```powershell
 cd frontend
-
-# Dependencies o'rnatish
 npm install
-
-# Dev server ishga tushirish
 npm run dev
 ```
 
-### 4. Brauzerda ochish
-- **Frontend:** http://localhost:5173
-- **Backend API:** http://localhost:8000/api/v1/
-- **Admin Panel:** http://localhost:8000/admin/
+Manzillar:
 
----
+- Frontend: `http://localhost:5173`
+- API: `http://localhost:8000/api/v1/`
+- Health check: `http://localhost:8000/api/health/`
+- Admin: `http://localhost:8000/admin/`
 
-## 📁 Loyiha Tuzilmasi
+## Environment
 
+Root katalogdagi `.env.example` faylidan `.env` yarating. Secret va API
+kalitlarini Git repositoryga qo'shmang.
+
+Muhim o'zgaruvchilar:
+
+- `SECRET_KEY`
+- `DEBUG`
+- `ALLOWED_HOSTS`
+- `CORS_ALLOWED_ORIGINS`
+- `GEMINI_API_KEY`
+- `GOOGLE_CLIENT_ID`
+- `GOOGLE_CLIENT_SECRET`
+- SMS va payment provider sozlamalari
+
+## Tekshiruv
+
+Frontend:
+
+```powershell
+npm run lint
+npm run build
 ```
-TenderHelper/
-├── backend/          # Django 5.0 + DRF
-│   ├── core/         # Project settings
-│   ├── users/        # Auth (Phone OTP + Google)
-│   ├── companies/    # Company profiles
-│   ├── tenders/      # Tender lots & search
-│   ├── analysis/     # AI analysis & calculator
-│   ├── subscriptions/# Plans & payments
-│   ├── teams/        # Team collaboration
-│   └── competitors/  # Competitor intelligence
-├── frontend/         # React 18 + Vite
-│   └── src/
-│       ├── api/      # API client
-│       ├── store/    # Zustand stores
-│       ├── components/
-│       ├── pages/
-│       └── routes/
-├── docs/             # Documentation
-├── TZ.md             # Texnik topshiriq
-└── IMPLEMENTATION_PLAN.md
+
+Backend:
+
+```powershell
+python manage.py check
+python manage.py test
 ```
 
----
+## Hujjatlar
 
-## 💰 Tarif Rejalari
+- [Asosiy reja](Plan.md)
+- [API hujjati](docs/API.md)
+- [Tarixiy hujjatlar](docs/archive/README.md)
 
-| | Free | Pro | Enterprise |
-|---|------|-----|------------|
-| **Narx** | $0 | $15/oy | $50/oy |
-| **AI Tahlil** | 4 ta/oy | Cheksiz | Cheksiz |
-| **Kalkulyator** | ✅ | ✅ | ✅ |
-| **Raqobatchi Razvedkasi** | ❌ | ❌ | ✅ |
-| **Jamoaviy Ishlash** | ❌ | ❌ | ✅ |
+## Litsenziya
 
----
-
-## 📄 Litsenziya
-
-Bu loyiha xususiy (private) litsenziya ostida. Barcha huquqlar himoyalangan.
-
----
-
-## 👥 Jamoa
-
-TenderHelper AI — O'zbekiston GovTech/LegalTech/FinTech startapi.
+Xususiy loyiha. Barcha huquqlar himoyalangan.

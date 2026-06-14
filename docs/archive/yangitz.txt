@@ -1,0 +1,83 @@
+🎯 TenderHelper — Yangilangan Strategik Ishchi Reja (Plan.md)
+1. Loyiha haqida va Umumiy Maqsad
+TenderHelper — O'zbekiston davlat xaridlari tizimidagi tender lotlarini avtomatlashtirilgan holda skreping qiluvchi, ularni chuqur tahlil etuvchi va tadbirkorlarga shaxsiy profil mezonlari asosida moslik foizini (Match Score) real vaqtda ko'rsatuvchi intellektual SaaS platformadir.
+Loyiha MVP+ bosqichida bo'lib, eng asosiy talab — maksimal yuqori tezlik, tizim barqarorligi, moliyaviy shaffoflik va infratuzilma xarajatlarini 0 so'mga (yoki minimal budjetga) tenglashtirish.
+
+2. Yangilangan Texnik Arxitektura (Split Architecture)
+Tizim yuklamani muvozanatlash va "bottleneck" (tiqilinch) holatlarini oldini olish uchun bir-biridan mustaqil ixtisoslashgan API guruhlariga ajratiladi:
+
+Frontend (React.js + PWA): Mutloq bepul Vercel platformasida joylashadi va asosiy tender-helper.uz domeniga ulanadi. Foydalanuvchi interfeysi global CDN orqali sub-soniyalarda yuklanadi.
+
+Backend (Django REST Framework): Albatta yuqori tezlikni ta'minlash uchun alohida Linux VPS serverda aylanadi. API so'rovlari uchun api.tender-helper.uz subdomeni ochiladi va Nginx (Reverse Proxy) + Certbot (Bepul Let's Encrypt HTTPS SSL) orqali xavfsizlantiriladi.
+
+Ma'lumotlar Bazasi va Xotira: PostgreSQL (ma'lumotlar uchun) hamda asinxron vazifalar uchun Redis brokeri ishlatiladi. Baza backend bilan bitta VPS ichida localhost tezligida ishlaydi.
+
+3. Telegram Ekotizimi va Mobil Arxitektura (0 so'm xarajat)
+Domen va Linklarsiz Tizim: Telegram bot tashqi subdomen yoki webhook talab qilmaydi. Serverda xavfsiz va bepul Long Polling rejimida background xizmat sifatida ishlaydi.
+
+Telegram Mini App: Alohida frontend yozilmaydi. Vercel-dagi React PWA ilovasi Telegram Mini App interfeysiga to'g'ridan-to'g'ri integratsiya qilinadi.
+
+Deep Linking (Smart Routing): Bot foydalanuvchiga inline xabar yuborganda, tugmaga maxsus havola biriktiriladi (tg://resolve?domain=bot&app=startapp_lotID). Tugma bosilganda Telegram Mini App ichida hech qanday havola ko'rinmagan holda ochiladi va React Router start_paramni o'qib, foydalanuvchini to'g'ridan-to'g'ri o'sha lotning AI tahlil sahifasiga yo'naltiradi.
+
+4. Ko'p Modelli Gibrid AI Shinasining Taqsifoti (Multi-LLM Mesh)
+Yolg'on ma'lumotlarni (Gallutsinatsiya) 100% oldini olish va xarajatlarni minimal qilish uchun tizimga bir nechta ixtisoslashgan AI API-lari ulanadi:
+
+A. Og'ir Hujjatlar Tahlili va RAG Pipeline
+Model: Gemini 1.5 Pro (Google AI Studio Free Tier orqali).
+
+Vazifa: 2 millionlik ulkan kontekst oynasi yordamida portallardan yuklangan 100-200 sahifalik qalin tender nizomlarini va texnik shartlarni to'liq o'qib chiqish.
+
+Vektor Xotira: Qimmat uchinchi tomon xizmatlarisiz (Pinecone/Qdrant), o'zimizning PostgreSQL bazamiz ichida mutloq tekin pgvector kengaytmasidan foydalaniladi. Hujjatlar LangChain orqali 1000 ta harflik chunk-larga bo'linib, bazada semantik qidiruv (Cosine Similarity) uchun saqlanadi.
+
+B. Business Chat-Assistent (Sub-second Response)
+Model: Llama 3.3 70B (Groq API platformasi orqali).
+
+Vazifa: Business tarifidagi shaxsiy chat-assistent oynasi. Groq-ning LPU texnologiyasi hisobiga sekundiga 500+ token tezlikda chaqmoqdek javob qaytaradi. RAG prompt cheklovlari (Guardrails) orqali model faqat taqdim etilgan kontekst doirasida javob beradi va kontekstdan tashqarida gallutsinatsiya qilishi qat'iyan bloklanadi.
+
+C. Funksional Integratsiyalar (Function Calling)
+Model: Llama 4 Scout yoki Qwen 3 32B (Groq API).
+
+Vazifa: Foydalanuvchining matnli yoki ovozli so'rovlarini structured data (JSON) formatiga o'g'irish va tizim ichidagi Python funksiyalarini avtomat ishga tushirish (Tool Use).
+
+5. Real Vaqtdagi Tavsiyalar Mexanizmi (Smart Recommendation Engine)
+Foydalanuvchi tizimga har safar kirib qidirib o'tirmaydi, tizim uning o'rniga ishlaydi:
+
+Celery Background Task: Har safar yangi lot bazaga skreping qilib qo'shilganda, orqa fonda MatchMakerTask ishga tushadi.
+
+Match Score Algoritmi: Yangi lot foydalanuvchining onboardingda ko'rsatgan mezonlari (Sohasi: +50%, Moliyaviy aylanmasi/Ustav fondi: +30%, Hudud/Viloyat: +20%) bo'yicha solishtirilib, moslik foizi hisoblanadi.
+
+Tezkor Xabarnoma: Moslik 80% dan yuqori bo'lsa, Long Polling Telegram Bot foydalanuvchiga real vaqtda inline tugmali chiroyli bildirishnoma yuboradi.
+
+6. FinTech, Billing va Huquqiy Poydevor
+Legal: Soliq xarajatlarini 0% qilish uchun startap boshlanishiga "O'z-o'zini band qilgan shaxs" maqomida yoki "Yoshlar daftari" imtiyozlari asosida YaTT ko'rinishida yuritiladi.
+
+Billing: CLICK to'lov tizimining standard API integratsiyasi backenddagi alohida yopiq xavfsiz webhook endpointi (/api/v1/payments/click/webhook/) orqali ulanadi.
+
+🗓️ 7. BOSQICHMA-BOSQICH AMALGA OSHIRISH REJASI
+Hafta 1: Poydevor, Ma'lumotlar Bazasi va Docker Muhiti
+[ ] PostgreSQL ichida pgvector plaginini faollashtirish.
+
+[ ] Django modellarini shakllantirish: User, CompanyProfile, TenderLot, TenderDocumentChunk, Payment.
+
+[ ] Local Docker-compose konfiguratsiyasini sozlash (Django + PostgreSQL + Redis + Celery).
+
+Hafta 2: Skreping va Multi-AI Pipeline Integratsiyasi
+[ ] Celery orqali davlat xaridlari portallaridan asinxron lot skreperlarini yozish.
+
+[ ] LangChain RecursiveCharacterTextSplitter va pgvector embedding tizimini backendga ulash.
+
+[ ] Groq (Llama 3.3 70B) va Gemini Pro universal API mijozlarini (base_url wrapper) sozlash. Fault-tolerance (biri o'chsa, ikkinchisiga o'tish) mantiqini yozish.
+
+Hafta 3: Telegram Bot (Polling), Deep Linking va Real-Time Match Engine
+[ ] Aiogram kutubxonasida Long Polling Telegram Botni VPS fonda aylantirish.
+
+[ ] MatchMakerTask algoritmini yozish va moslik 80% dan oshganda botga push-bildirishnoma mantiqini ulash.
+
+[ ] Telegram Mini App uchun start_param (Deep Linking) marshrutizatsiyasini React frontendda sozlash.
+
+Hafta 4: CLICK Integration, Testing va Deploy (Vercel + VPS)
+[ ] CLICK Webhook xavfsiz endpointini yozish va tranzaksiyalarni tekshirish logikasi.
+
+[ ] GitLab Duo Chat (Claude) yordamida backend mantiqlari va billing uchun 100% test qoplamasini (Unit tests) yozish.
+
+[ ] Frontendni Vercel-ga, backendni esa Linux VPS-ga Nginx Reverse Proxy orqali deploy qilish.
