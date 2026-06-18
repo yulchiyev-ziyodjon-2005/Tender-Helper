@@ -9,6 +9,7 @@ import {
   fetchAnalysisStatus,
   startAnalysis,
 } from '../api/analysis';
+import { apiEndpoints } from '../api/endpoints';
 import { fetchTenderById, fetchTenders } from '../api/tenders';
 
 export default function TenderAnalysisPage() {
@@ -67,8 +68,8 @@ export default function TenderAnalysisPage() {
         setAnalysisPhase('Mavjud AI tahlil jarayoni tekshirilmoqda...');
         const analysis = await pollAnalysisRun({
           id: reusableAnalysis.id,
-          status_url: `/analysis/${reusableAnalysis.id}/status/`,
-          result_url: `/analysis/${reusableAnalysis.id}/result/`,
+          status_url: apiEndpoints.analysis.status(reusableAnalysis.id),
+          result_url: apiEndpoints.analysis.result(reusableAnalysis.id),
         }, (statusPayload) => {
           setLoadingProgress(statusPayload.progress_percent || 0);
           const phaseLabels = {
@@ -256,8 +257,8 @@ async function findReusableAnalysis(tenderId) {
 }
 
 async function pollAnalysisRun(run, onStatus) {
-  const statusUrl = run.status_url || `/analysis/${run.id}/status/`;
-  const resultUrl = run.result_url || `/analysis/${run.id}/result/`;
+  const statusUrl = run.status_url || apiEndpoints.analysis.status(run.id);
+  const resultUrl = run.result_url || apiEndpoints.analysis.result(run.id);
   const startedAt = Date.now();
   const timeoutMs = 120000;
 

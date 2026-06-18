@@ -7,6 +7,7 @@
 
 import axios from 'axios';
 import { API_BASE_URL } from '../utils/constants';
+import { apiEndpoints } from './endpoints';
 import {
   clearTokens,
   getAccessToken,
@@ -49,7 +50,7 @@ apiClient.interceptors.response.use(
       const refreshToken = getRefreshToken();
       if (refreshToken) {
         try {
-          const { data } = await axios.post(`${API_BASE_URL}/auth/refresh/`, {
+          const { data } = await axios.post(`${API_BASE_URL}${apiEndpoints.auth.refresh}`, {
             refresh: refreshToken,
           });
 

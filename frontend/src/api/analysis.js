@@ -1,11 +1,12 @@
 import apiClient from './client';
+import { apiEndpoints } from './endpoints';
 
 function unwrapResults(payload) {
   return Array.isArray(payload) ? payload : (payload.results || []);
 }
 
 export async function startAnalysis(lotId, payload = {}) {
-  const { data } = await apiClient.post('/analysis/start/', {
+  const { data } = await apiClient.post(apiEndpoints.analysis.start, {
     lot_id: lotId,
     ...payload,
   });
@@ -13,7 +14,7 @@ export async function startAnalysis(lotId, payload = {}) {
 }
 
 export async function fetchAnalysisHistory(params = {}) {
-  const { data } = await apiClient.get('/analysis/history/', { params });
+  const { data } = await apiClient.get(apiEndpoints.analysis.history, { params });
   return {
     payload: data,
     results: unwrapResults(data),
@@ -32,7 +33,7 @@ export async function fetchAnalysisResult(resultUrl) {
 
 export async function calculateAnalysis(analysisId, payload) {
   const { data } = await apiClient.post(
-    `/analysis/${analysisId}/calculate/`,
+    apiEndpoints.analysis.calculate(analysisId),
     payload,
   );
   return data;

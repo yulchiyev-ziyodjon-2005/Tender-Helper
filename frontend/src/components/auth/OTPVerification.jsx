@@ -2,7 +2,9 @@ import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { sendOtp, verifyOtp as verifyOtpApi } from '../../api/auth';
 import useAuthStore from '../../store/authStore';
+import { getApiError } from '../../utils/security';
 
 export default function OTPVerification({ phoneNumber, onBack }) {
   const { t } = useTranslation();
@@ -81,24 +83,13 @@ export default function OTPVerification({ phoneNumber, onBack }) {
     setError('');
 
     try {
-      const res = await fetch('/api/v1/auth/verify-otp/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone_number: phoneNumber, otp: code }),
-      });
-
-      const data = await res.json();
-
-      if (res.ok) {
-        login(data.tokens, data.user);
-        navigate(data.is_new_user ? '/onboarding' : '/dashboard', { replace: true });
-      } else {
-        setError(data.message || t('errors.invalid_otp'));
-        setOtp(['', '', '', '', '', '']); // Xato bo'lsa tozalash
-        inputsRef.current[0].focus();
-      }
-    } catch {
-      setError(t('messages.network_error'));
+      const data = await verifyOtpApi({ phone_number: phoneNumber, otp: code });
+      login(data.tokens, data.user);
+      navigate(data.is_new_user ? '/onboarding' : '/dashboard', { replace: true });
+    } catch (error) {
+      setError(getApiError(error, t('errors.invalid_otp')));
+      setOtp(['', '', '', '', '', '']); // Xato bo'lsa tozalash
+      inputsRef.current[0].focus();
     } finally {
       setIsLoading(false);
     }
@@ -110,22 +101,12 @@ export default function OTPVerification({ phoneNumber, onBack }) {
     setError('');
 
     try {
-      const res = await fetch('/api/v1/auth/send-otp/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone_number: phoneNumber }),
-      });
-
-      if (res.ok) {
-        setTimeLeft(180);
-        setOtp(['', '', '', '', '', '']);
-        inputsRef.current[0].focus();
-      } else {
-        const data = await res.json();
-        setError(data.message);
-      }
-    } catch {
-      setError(t('messages.network_error'));
+      await sendOtp(phoneNumber);
+      setTimeLeft(180);
+      setOtp(['', '', '', '', '', '']);
+      inputsRef.current[0].focus();
+    } catch (error) {
+      setError(getApiError(error, t('messages.network_error')));
     } finally {
       setIsLoading(false);
     }

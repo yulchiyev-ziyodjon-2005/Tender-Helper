@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "contract:api": "node scripts/api-contract-smoke.mjs"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.101.0",

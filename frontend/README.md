@@ -76,6 +76,23 @@ npm run lint
 npm run build
 ```
 
+Backend API contract smoke:
+
+```powershell
+# Backend alohida terminalda http://127.0.0.1:8000 da ishlayotgan bo'lishi kerak.
+$env:API_CONTRACT_API_BASE_URL='http://127.0.0.1:8000/api/v1'
+npm run contract:api
+
+# Real login/session/team/admin contractlari uchun:
+$env:API_CONTRACT_EMAIL='user@example.uz'
+$env:API_CONTRACT_PASSWORD='strong-password'
+npm run contract:api
+```
+
+Frontend API wrapperlari `src/api/endpoints.js`dagi canonical plural backend
+contractdan foydalanadi. Yangi UI yuzasi endpoint qo'shsa, avval shu registry
+yangilanadi, keyin `contract:api` smoke scriptga tekshiruv qo'shiladi.
+
 Frontend environment:
 
 ```text
