@@ -1,10 +1,6 @@
 import { apiEndpoints, asApiV1Path } from '../src/api/endpoints.js';
 
-const apiBaseUrl = stripTrailingSlash(
-  process.env.API_CONTRACT_API_BASE_URL
-  || process.env.VITE_API_BASE_URL
-  || 'http://127.0.0.1:8000/api/v1',
-);
+const apiBaseUrl = resolveBaseUrl();
 const originUrl = new URL(apiBaseUrl).origin;
 const email = process.env.API_CONTRACT_EMAIL || '';
 const password = process.env.API_CONTRACT_PASSWORD || '';
@@ -13,6 +9,33 @@ const checks = [];
 
 function stripTrailingSlash(value) {
   return String(value).replace(/\/+$/, '');
+}
+
+function resolveBaseUrl() {
+  const explicit = process.env.API_CONTRACT_API_BASE_URL || '';
+  if (explicit) {
+    return requireAbsoluteUrl(explicit, 'API_CONTRACT_API_BASE_URL');
+  }
+
+  const viteBase = process.env.VITE_API_BASE_URL || '';
+  if (viteBase && /^https?:\/\//i.test(viteBase)) {
+    return requireAbsoluteUrl(viteBase, 'VITE_API_BASE_URL');
+  }
+
+  const origin = process.env.API_CONTRACT_ORIGIN || 'http://127.0.0.1:8000';
+  const originUrl = requireAbsoluteUrl(origin, 'API_CONTRACT_ORIGIN');
+  return `${stripTrailingSlash(originUrl)}/api/v1`;
+}
+
+function requireAbsoluteUrl(value, name) {
+  try {
+    return stripTrailingSlash(new URL(value).toString());
+  } catch (error) {
+    throw new Error(
+      `${name} must be an absolute http(s) URL, got: ${value}. ` +
+      `Use API_CONTRACT_ORIGIN=http://127.0.0.1:8000 or API_CONTRACT_API_BASE_URL=https://host/api/v1.`,
+    );
+  }
 }
 
 function urlFor(path) {
@@ -126,10 +149,14 @@ async function checkAuthGuardContract() {
 }
 
 async function checkAuthenticatedContract() {
-  if (!email || !password) {
+  if (!email && !password) {
     console.log('Skipping authenticated contract checks: set API_CONTRACT_EMAIL and API_CONTRACT_PASSWORD.');
     return;
   }
+  assert(
+    Boolean(email) && Boolean(password),
+    'API_CONTRACT_EMAIL and API_CONTRACT_PASSWORD must be provided together.',
+  );
 
   const login = await request('auth.login.valid', apiEndpoints.auth.login, {
     method: 'POST',
@@ -186,6 +213,10 @@ async function main() {
   assert(
     asApiV1Path(apiEndpoints.auth.login) === '/api/v1/auth/login/',
     'endpoint registry must map auth.login to canonical API v1 path',
+  );
+  assert(
+    apiBaseUrl.startsWith('http://') || apiBaseUrl.startsWith('https://'),
+    'API contract smoke requires an absolute http(s) base URL',
   );
   await checkPublicContract();
   await checkAuthGuardContract();

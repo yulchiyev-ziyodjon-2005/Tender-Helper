@@ -79,8 +79,12 @@ npm run build
 Backend API contract smoke:
 
 ```powershell
-# Backend alohida terminalda http://127.0.0.1:8000 da ishlayotgan bo'lishi kerak.
-$env:API_CONTRACT_API_BASE_URL='http://127.0.0.1:8000/api/v1'
+# Local backend uchun:
+$env:API_CONTRACT_ORIGIN='http://127.0.0.1:8000'
+
+# Staging/VPS uchun:
+$env:API_CONTRACT_API_BASE_URL='https://api.tenderhelperai.com/api/v1'
+
 npm run contract:api
 
 # Real login/session/team/admin contractlari uchun:
@@ -92,6 +96,8 @@ npm run contract:api
 Frontend API wrapperlari `src/api/endpoints.js`dagi canonical plural backend
 contractdan foydalanadi. Yangi UI yuzasi endpoint qo'shsa, avval shu registry
 yangilanadi, keyin `contract:api` smoke scriptga tekshiruv qo'shiladi.
+Local backendda `API_CONTRACT_ORIGIN`, staging/VPSda esa
+`API_CONTRACT_API_BASE_URL` ishlatiladi.
 
 Frontend environment:
 

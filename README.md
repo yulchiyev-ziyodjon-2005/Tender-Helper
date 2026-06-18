@@ -165,9 +165,13 @@ npm run build
 Frontend/API contract smoke:
 
 ```powershell
-# 1) backend server alohida terminalda ishlasin: http://127.0.0.1:8000
 cd frontend
-$env:API_CONTRACT_API_BASE_URL='http://127.0.0.1:8000/api/v1'
+# Local backend uchun:
+$env:API_CONTRACT_ORIGIN='http://127.0.0.1:8000'
+
+# Staging/VPS uchun:
+$env:API_CONTRACT_API_BASE_URL='https://api.tenderhelperai.com/api/v1'
+
 npm run contract:api
 
 # Authenticated dashboard/team/admin contract uchun ixtiyoriy:
@@ -179,7 +183,8 @@ npm run contract:api
 `contract:api` frontend endpoint registrysini real backendga qarshi tekshiradi:
 health, public tenders, Google config, 401 auth guard envelope, invalid login
 va credential berilsa authenticated session/profile/entitlement/team/admin
-contractlari.
+contractlari. `API_CONTRACT_ORIGIN` local backendga, `API_CONTRACT_API_BASE_URL`
+esa staging/VPS API endpointiga mos.
 
 Frontend:
 

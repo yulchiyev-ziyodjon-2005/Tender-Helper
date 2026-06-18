@@ -326,7 +326,11 @@ Real backendga qarshi smoke:
 
 ```powershell
 cd frontend
-$env:API_CONTRACT_API_BASE_URL='http://127.0.0.1:8000/api/v1'
+$env:API_CONTRACT_ORIGIN='http://127.0.0.1:8000'
+
+# Staging/VPS uchun:
+$env:API_CONTRACT_API_BASE_URL='https://api.tenderhelperai.com/api/v1'
+
 npm run contract:api
 ```
 
@@ -335,3 +339,5 @@ tekshiradi. `API_CONTRACT_EMAIL` va `API_CONTRACT_PASSWORD` berilsa login,
 session, company profile, entitlements, team workspace va admin overview
 contractlari ham tekshiriladi. Yangi frontend yuzasi yangi endpoint ishlatsa,
 `endpoints.js` va `scripts/api-contract-smoke.mjs` birga yangilanishi shart.
+`VITE_API_BASE_URL` contract smoke target sifatida ishlatilmaydi; u faqat
+frontend build uchun qoladi.
