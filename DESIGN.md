@@ -1,7 +1,7 @@
 # TenderHelper — UI/UX Dizayn Strukturasi va Ekranlar Spesifikatsiyasi
 
-**Versiya:** 1.2
-**Yangilangan:** 2026-06-14  
+**Versiya:** 1.3
+**Yangilangan:** 2026-06-15
 **Status:** Canonical dizayn hujjati — barcha frontend ishlanmalar uchun asosiy manba
 
 ---
@@ -1790,6 +1790,122 @@ export const PLAN_FEATURES = {
 Superadmin ushbu tarif matritsasiga kirmaydi. Uning ruxsatlari obuna orqali
 emas, `Plan.md` va `IMPLEMENTATION_PLAN.md`dagi capability matrix, MFA va
 step-up authentication qoidalari orqali beriladi.
+
+---
+
+## 26. 2026-06-15 Implementatsiya Reconciliation
+
+Landing, split-screen auth, STIR onboarding, legal routes, Team Hub va
+Superadmin preview implementatsiya qilingan. Telegram member lifecycle va
+Telegram Mini App quyidagi target contract bo'yicha keyingi Phase D scope
+hisoblanadi; mavjud funksiyadek ko'rsatilmaydi.
+
+### 26.1. Landing va Legal
+
+- sticky animated navbar: Features, Pricing, Competitor Intel, Sign In,
+  Register va responsive mobile menu;
+- hero: “AI-Powered Tender Automation & Matchmaking for Uzbekistan/Global
+  Markets” va CSS/SVG dashboard preview;
+- preview: active scraped lots, AI pipeline va won/lost demo statistikasi;
+- bento: Smart Matchmaking, AI Analysis/Citation, Document Generator/Editor,
+  Competitor Intelligence va planned Telegram Mini App Ecosystem;
+- monthly/annual toggle 20% discount bilan keyboard-accessible control;
+- Free: `0 UZS`, 4 analysis quota, basic search va calculator;
+- Pro: `350,000 UZS/oy`, `3,360,000 UZS/yil`;
+- Business: `950,000 UZS/oy`, `9,120,000 UZS/yil`, STIR, documents,
+  competitor intelligence va team collaboration;
+- contacts: `info@tenderhelperai.com`, `+998 (94) 994-05-04`,
+  `https://t.me/+fg-PELSnruU0NjVi`, `https://t.me/Zdn_Ychv`;
+- `/terms` va `/privacy` mustaqil responsive sahifalar.
+
+### 26.2. Auth va STIR
+
+- social proof panel va accessible form;
+- Company Name, Full Name, Work Email, Phone, Password, strength va Terms;
+- 9 raqamli STIR lookup, progress/error/manual fallback;
+- editable Director Name, Legal Address va Registry Status drafti;
+- skip tanlansa Documents, Competitors va Business Team gate sababi;
+- login: Remember me, password visibility va 401/403 red alert;
+- invited member uchun majburiy password-change checkpoint.
+
+## 27. Business Team Collaboration
+
+Sidebar backend `workspace` response'idagi explicit permission bo'yicha
+bo'limlarni ko'rsatadi. Ruxsatsiz action yashiriladi; backend har deep-link va
+requestni qayta tekshiradi.
+
+Add Member modal:
+
+- Full Name, Work Email va one-time Temporary Password;
+- Phase D'da Telegram Username `@nik`;
+- Force Password Change on First Login;
+- Admin, Manager yoki Viewer role;
+- Search: View Lots, Export Lot Data;
+- AI: Run Deep AI Risk Analysis, Use Quotas;
+- Documents: Generate AI Contracts, Edit Inline Workspace, Export PDF/DOCX;
+- Competitors: Access Competitor Metrics;
+- Administration: Manage Team.
+
+Security Console login status, device/browser, last-active IP va timestampni
+ko'rsatadi. `Revoke Session / Terminate Access` confirmation bilan web va
+kelajak TMA accessini birga yopadi.
+
+## 28. Telegram Lifecycle va TMA Target
+
+**Holat:** hali implementatsiya qilinmagan.
+
+Team member Telegram module:
+
+- username va masked numeric Telegram ID;
+- `not_linked`, `pending`, `verified`,
+  `awaiting_new_session_verification`, `revoked`, `failed` statuslari;
+- `Update/Re-link Telegram Username` action;
+- username tahriri accountni avtomatik boshqa userga bermaydi;
+- re-linkdan keyin `Awaiting New Session Verification`;
+- mismatch corporate password va step-up fallbackini ochadi.
+
+Smartphone TMA viewport safe initialization ketma-ketligi:
+
+1. Telegram WebApp `initData` olinmoqda.
+2. Backend signature, `auth_date` va replayni tekshirmoqda.
+3. Numeric Telegram ID company member bilan bog'lanmoqda.
+4. Permission snapshot yuklanmoqda.
+
+Dashboard faqat lot, AI analysis, document status/read-only preview,
+competitor metrics va ruxsatli notificationlarni ko'rsatadi. TMA MVP'da team
+administration, bulk export va rich-text editing yo'q.
+
+Mismatch fallback generic alert, Corporate Password, retry cooldown va
+account enumerationga qarshi neutral error matnidan foydalanadi. Successdan
+keyin eski sessionlar revoke qilinadi.
+
+## 29. Superadmin Operation Radar Reconciliation
+
+Har bir karta explicit freshness timestamp bilan:
+
+- total companies va STIR completion;
+- subscription distribution va MRR;
+- ingestion requests, AI requests/tokens/failure by provider.
+
+Authoritative ledger yoki telemetry bo'lmasa karta `unavailable` yoki `stale`;
+demo raqam production metrikasi sifatida ko'rsatilmaydi.
+
+Audit ustunlari: Timestamp, Capability Role, Performed Action, Mandated
+Reason, masked identity, MFA/step-up success, request ID, IP va result.
+Audit append-only, edit/delete action yo'q.
+
+## 30. Global UX va Security Acceptance
+
+- mobile, tablet, desktop va ultra-wide layout;
+- system/light/dark mode;
+- focus ring, semantic labels, error association va keyboard flow;
+- inline SVG accessible title yoki `aria-hidden` bilan;
+- stringlar text node, raw HTML injection yo'q;
+- rich text server-side allowlist sanitizationdan keyin;
+- loading, empty, error, stale, forbidden va gated states;
+- reduced-motion support va route-level code splitting;
+- legal surfaces Phase D rolloutdan oldin Telegram identity va notification
+  data processingni qamrab oladi.
 
 ---
 

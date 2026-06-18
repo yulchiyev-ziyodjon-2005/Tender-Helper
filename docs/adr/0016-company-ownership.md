@@ -1,4 +1,4 @@
-# ADR-0001: Company Ownership Enforcement
+# ADR-016: Company Ownership Enforcement
 
 - Status: Accepted
 - Date: 2026-06-14

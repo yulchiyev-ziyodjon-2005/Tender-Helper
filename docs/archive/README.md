@@ -10,6 +10,7 @@ Amaldagi hujjatlar:
 - bajarilish rejasi: [`../../IMPLEMENTATION_PLAN.md`](../../IMPLEMENTATION_PLAN.md);
 - target UI/UX: [`../../DESIGN.md`](../../DESIGN.md);
 - amaldagi API snapshoti: [`../API.md`](../API.md).
+- Telegram/TMA target contracti: [`../TELEGRAM_TMA_PLAN.md`](../TELEGRAM_TMA_PLAN.md).
 
 Arxivdagi bir xil nomli fayllar amaldagi hujjat emas.
 

@@ -1,4 +1,4 @@
-# ADR-0002: Manual Tender Identity
+# ADR-017: Manual Tender Identity
 
 - Status: Accepted
 - Date: 2026-06-14

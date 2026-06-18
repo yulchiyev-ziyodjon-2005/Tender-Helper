@@ -1,8 +1,12 @@
 # TenderHelper - Canonical Implementation Plan
 
-**Versiya:** 1.3  
-**Yangilangan:** 2026-06-14  
-**Status:** Implementation active; Work Package 0 completed  
+**Versiya:** 1.3
+**Yangilangan:** 2026-06-18
+**Status:** Implementation active. WP0-WP7 backend foundation, production
+landing/auth/STIR onboarding, Business Team Hub va Superadmin preview
+implementatsiya qilingan. Telegram/TMA uchun backend data-contract modellari
+mavjud; bot runtime, linking endpointlari va Mini App auth oqimi Phase D
+scope'ida qoladi.
 **Strategik manba:** `Plan.md` v4.3
 
 ---
@@ -43,14 +47,15 @@ Ustuvorlik:
 - 4 haftalik kritik delivery rejasi;
 - keyingi platforma bosqichlari.
 
-### Hozir implementatsiya qilinmaydi
+### Joriy bosqich chegarasi
 
-- Django model yoki migration yozish;
-- endpoint, serializer yoki service yaratish;
-- frontend component yoki editor integratsiyasi;
-- tashqi API'ga real ulanish;
-- dependency o'rnatish;
-- database migratsiya qilish.
+- landing, auth, onboarding, team va Superadmin frontend yuzalari mavjud;
+- document inline editorning to'liq production UX'i keyingi bosqichda;
+- tasdiqlanmagan registry/payment providerga real ulanish qilinmaydi;
+- work package'lar dependency tartibida backend va frontend bo'yicha bajariladi;
+- provider credentiallari tasdiqsiz kodga kiritilmaydi;
+- Telegram data-contract modellari mavjud; bot runtime, linking endpointlari
+  va Mini App auth/UI hali implementatsiya qilinmagan.
 
 ---
 
@@ -75,6 +80,9 @@ Ustuvorlik:
 | D-15 | Real-time dashboard MVP'da polling/cache, event alertlar alohida | Qabul qilingan |
 | D-16 | Kritik admin action step-up auth va immutable audit talab qiladi | Qabul qilingan |
 | D-17 | Target API resource prefixlari plural; singular demo prefixlar vaqtincha compatibility alias | Qabul qilingan |
+| D-18 | Browser access tokeni default `sessionStorage`, faqat explicit Remember me bilan `localStorage`; refresh cookie keyingi security phase | Qabul qilingan interim |
+| D-19 | Telegram username identity authority emas; verifikatsiyadan keyin immutable Telegram numeric user ID canonical bo'ladi | Phase D qarori |
+| D-20 | TMA `initData` faqat serverda HMAC, `auth_date` freshness va replay tekshiruvidan keyin qabul qilinadi | Phase D qarori |
 
 Quyidagilar ADR talab qiladi:
 
@@ -113,7 +121,8 @@ Migratsiya qoidasi:
 | Documents | Alohida `documents` app | Template, generation, editor, version, export |
 | Competitors | `competitors` | Completed results va analytics |
 | Subscription | `subscriptions` | Tarif, usage, feature gate, payment |
-| Team | `teams` | Company roles va vazifalar |
+| Team | `teams` | Company membership, roles, explicit permissions va session lifecycle |
+| Telegram | rejalashtirilgan `telegram` app | Bot identity link, TMA auth/session va notification preferences |
 | Admin control plane | Mavjud applar ustidagi admin API/UI | User, billing, operations, audit orchestration |
 
 ### Documents app qarori
@@ -172,10 +181,9 @@ Yo'q. Barcha boshqa work package'lardan oldin tugashi kerak.
 
 ## 6. Work Package 1 - STIR Onboarding
 
-**Backend status:** 2026-06-14 kuni model, provider gateway, cache/retry,
-editable draft, confirm, skip, refresh, feature gate va backend testlari
-yakunlandi. Frontend implementatsiyasi `DESIGN.md` asosida alohida bosqichda
-bajariladi.
+**Status:** 2026-06-15 holatiga backend model/provider/cache/retry, editable
+draft, confirm, skip, refresh va feature gate yakunlangan. Frontend signup,
+STIR lookup, registry draft confirmation va skip/gated UX bilan ulangan.
 
 ### 6.1. User journey
 
@@ -291,6 +299,12 @@ Tavsiya: audit va retry uchun alohida draft modeli:
 
 ## 7. Work Package 2 - Subscription va Feature Gating
 
+**Backend status:** 2026-06-14 kuni DB-backed plan catalogi, subscription
+lifecycle, membership boundary, role/STIR/feature gate, atomik usage
+hisobi, canonical API, legacy alias va analysis quota integratsiyasi
+yakunlandi. Payment provider va frontend bu work package tarkibida
+aktivlashtirilmadi.
+
 ### Tariflar
 
 | Tarif | Asosiy imkoniyat |
@@ -346,6 +360,13 @@ Frontend gate faqat UX uchun; backend har requestda qayta tekshiradi.
 ---
 
 ## 8. Work Package 3 - AI Document Generator
+
+**Backend status:** 2026-06-14 kuni standalone `documents` app, immutable
+template versionlari, uz/ru seed template katalogi, allowlist context,
+provider gateway, Celery task boundary, typed canonical output, ownership va
+Business/STIR gate, generation status polling hamda revision API yakunlandi.
+Frontendda feature surface mavjud; yakuniy rich-text inline editor va
+production object storage keyingi bosqichda.
 
 ### 8.1. Model spetsifikatsiyasi
 
@@ -458,6 +479,12 @@ authorize
 
 ## 9. Work Package 4 - Inline Editor va Export
 
+**Backend status:** 2026-06-14 kuni canonical JSON adapteri, server-side HTML
+sanitizatsiya, plain-text projection, autosave PATCH contracti, optimistic
+locking, revision history, explicit approval, PDF/DOCX export, storage
+metadata, checksum, signed download va append-only document audit yakunlandi.
+Rich Text Editor UI va E2E frontend bosqichida bajariladi.
+
 ### Editor
 
 Tanlov mezonlari:
@@ -500,6 +527,12 @@ Nomzodlar implementatsiyadan oldin spike bilan baholanadi: TipTap, Lexical.
 ---
 
 ## 10. Work Package 5 - Competitor Intelligence
+
+**Backend status:** 2026-06-14 kuni normalized participant/bid/award source
+modellari, deterministic va idempotent aggregation, data-quality lifecycle,
+Business/Enterprise API gate, usage accounting, freshness endpointi, Celery
+refresh taski va regression testlari yakunlandi. Portal source adapterlari
+alohida ingestion bosqichida ulanadi.
 
 ### 10.1. Data pipeline
 
@@ -599,6 +632,16 @@ Bunday row analyticsga kirmaydi va data-quality logga yoziladi.
 
 ## 11. Work Package 6 - PostgreSQL va LIKE Qidiruv
 
+**Backend status:** 2026-06-14 kuni `DATABASE_URL`/`APP_ENV` contracti,
+PostgreSQL 16 CI service, `pg_trgm` va Django `icontains` SQLiga mos
+functional GIN migration, category qidiruvi, 20/100 pagination, N+1siz list,
+benchmark seeder va `EXPLAIN ANALYZE` p95 gate implement qilindi. Mahalliy
+muhitda PostgreSQL mavjud emas; production p95 natijasi PostgreSQL CI jobida
+tekshiriladi. Source-aware `(source, external_id)` tender identity, portal
+source katalogi, mavjud lotlar backfilli va asosiy domain integrity
+constraintlari ham qo'shildi. Frontend debounce backend scope'idan keyinga
+qoldirilgan.
+
 ### Vazifalar
 
 - PostgreSQL 16.
@@ -620,6 +663,15 @@ Bunday row analyticsga kirmaydi va data-quality logga yoziladi.
 ---
 
 ## 12. Work Package 7 - Superadmin Console
+
+**Backend status (2026-06-14):** capability/MFA/step-up foundation, immutable
+audit, idempotent write contract, user/company support API, plan and
+subscription controls, scheduled downgrade, feature flags, maintenance
+banner, template publish control, PII/audit export and source-aware overview
+implemented. Payment, scraper, queue and complete AI cost/provider operations
+remain explicitly `unavailable` until their authoritative domain adapters
+exist. Frontend `/superadmin/` operational preview mavjud va 401/403 holatida
+fail-closed ishlaydi.
 
 ### 12.1. Chegara
 
@@ -886,10 +938,53 @@ Bloklovchi dependency'lar:
 
 ### Phase D - Telegram
 
-- bot;
-- account linking;
-- Mini App auth;
-- match/deadline notification.
+**Holat:** backend data-contract modellari, migratsiya va invariant testlari
+mavjud; bot runtime, linking endpointlari, HMAC `initData` verification va
+Mini App UI hali rejalashtirilgan Phase D scope'ida.
+
+- `aiogram` asosidagi bot va webhook/polling environment contracti;
+- bir martalik, muddati cheklangan account-link challenge;
+- `TelegramIdentity`: company member, immutable Telegram numeric user ID,
+  oxirgi ma'lum username, verification va relink statusi;
+- `TelegramLinkChallenge`: hash qilingan token, expiry, attempt count va
+  consumed timestamp;
+- `TelegramMiniAppSession`: init-data fingerprint, auth time, last active,
+  device metadata va revoke holati;
+- `NotificationPreference` va `NotificationDelivery` orqali role/permission
+  bilan cheklangan match, deadline, analysis va system xabarlari;
+- TMA `initData` payloadini serverda bot token asosidagi HMAC bilan tekshirish;
+- `auth_date` freshness, replay resistance, rate limit va audit;
+- username o'zgarganda admin `Update/Re-link Telegram` oqimi va
+  `awaiting_new_session_verification` statusi;
+- username yoki hash mismatch holatida avtomatik account takeover yo'q:
+  corporate password va zarur bo'lsa step-up orqali qayta bog'lash;
+- web va Mini App sessiyalarini bitta revoke action bilan bekor qilish;
+- Mini App dashboard faqat member explicit permissionlari bo'yicha
+  ruxsat etilgan bo'limlarni render qiladi;
+- landing page'da Telegram Mini App ekotizimi alohida feature sifatida
+  ko'rsatiladi, lekin mavjud bo'lmagan capability “live” deb da'vo qilinmaydi.
+
+Target API contract:
+
+| Method | Endpoint | Vazifa |
+|---|---|---|
+| POST | `/api/v1/telegram/tma/auth/` | `initData`ni tekshirib TMA session yaratish |
+| POST | `/api/v1/telegram/link/challenges/` | Link/re-link challenge yaratish |
+| POST | `/api/v1/telegram/link/confirm/` | Bot yoki TMA orqali challenge tasdiqlash |
+| PATCH | `/api/v1/teams/members/<uuid>/telegram/` | Admin relink jarayonini boshlashi |
+| DELETE | `/api/v1/teams/members/<uuid>/telegram/` | Identityni ajratish va sessionlarni revoke qilish |
+| GET/PATCH | `/api/v1/telegram/notifications/` | Ruxsat doirasidagi notification sozlamalari |
+| POST | `/api/v1/telegram/sessions/revoke/` | Joriy yoki barcha TMA sessionlarini bekor qilish |
+
+Acceptance criteria:
+
+- forged, expired yoki replay qilingan `initData` rad etiladi;
+- faqat username mosligi account link uchun yetarli emas;
+- permission olib tashlanganda TMA menyusi va backend endpoint darhol yopiladi;
+- member revoke web va TMA token/sessionlarini birga bekor qiladi;
+- bot token frontend bundle, URL yoki logga chiqmaydi;
+- barcha link/re-link/revoke actionlari auditlanadi;
+- notification delivery idempotent va retry-safe.
 
 ### Phase E - Billing
 
@@ -1067,7 +1162,7 @@ Kodlashdan oldin yopilishi kerak:
 
 1. Qaysi Soliq/Statistika registry API rasmiy va foydalanishga ruxsatli?
 2. Registry API sandbox, auth, limit va SLA qanday?
-3. Business tarif narxi va document generation limiti qancha?
+3. Business document generation va team seat limiti qanday bo'ladi?
 4. Template'larni kim huquqiy tasdiqlaydi?
 5. PDF/DOCX export uchun talab etilgan rasmiy formatlar qaysi?
 6. Completed tender participant/bid data qaysi portalda ochiq?
@@ -1079,6 +1174,10 @@ Kodlashdan oldin yopilishi kerak:
 10. Subscription manual override uchun maksimal muddat va approval siyosati?
 11. Refund action bir yoki ikki admin tasdig'ini talab qiladimi?
 12. Moliyaviy dashboardda MRR va churnning biznes formulasi qanday?
+13. Telegram bot username, webhook domain va production bot token owneri kim?
+14. TMA `initData` uchun maksimal `auth_date` yoshi va replay retention qancha?
+15. Telegram relink uchun corporate passwordning o'zi yetarlimi yoki MFA ham
+    majburiymi?
 
 ---
 

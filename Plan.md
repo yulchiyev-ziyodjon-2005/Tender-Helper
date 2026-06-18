@@ -1,8 +1,36 @@
 # TenderHelper — Asosiy Strategik va Texnik Reja
 
-**Versiya:** 4.3
-**Yangilangan:** 2026-06-14  
+**Versiya:** 4.4
+**Yangilangan:** 2026-06-15
 **Status:** Canonical plan — barcha texnik qarorlar uchun yagona boshqaruvchi hujjat
+
+---
+
+## 0. 2026-06-15 Holat Reconciliation
+
+Amalda mavjud:
+
+- React 19/Tailwind 4 landing, auth, STIR onboarding va legal routes;
+- Free `0 UZS`, Pro `350,000 UZS/oy` (`3,360,000 UZS/yil`) va Business
+  `950,000 UZS/oy` (`9,120,000 UZS/yil`) pricing contracti;
+- Business + STIR bilan gated Team Hub, `owner/admin/manager/viewer` rollari,
+  explicit permission matrix, temporary password va force-change oqimi;
+- team session device/browser/IP kuzatuvi va barcha accessni revoke qilish;
+- Superadmin frontend preview va capability/MFA/step-up backend control plane;
+- PostgreSQL 16 production contracti, SQLite local fallback;
+- backend test suite: 130 passed, 1 skipped; frontend lint/build green.
+
+Hali rejalashtirilgan:
+
+- Telegram bot, account linking va Telegram Mini App;
+- real portal ingestion, RAG citation pipeline, payment provider;
+- production object storage va document editorning yakuniy rich-text UX'i;
+- authoritative payment, AI token/cost, queue va scraper telemetry adapterlari.
+
+Telegram username o'zgaruvchan bo'lgani sabab identity key emas. Phase D'da
+server tomonidan tekshirilgan Telegram numeric user ID canonical identity
+bo'ladi. TMA `initData` HMAC, freshness va replay tekshiruvisiz qabul
+qilinmaydi. Batafsil contract `docs/TELEGRAM_TMA_PLAN.md` va ADR-018da.
 
 ---
 
@@ -78,13 +106,41 @@ Repository hozir demo/MVP prototip bosqichida:
 - React 19, Vite 8 va Tailwind CSS 4 frontend mavjud;
 - email, OTP va Google OAuth oqimlarining bir qismi mavjud;
 - tender qidiruvi va qo'lda tender kiritish mavjud;
-- Gemini orqali sinxron AI tahlil prototipi mavjud;
+- Gemini provider gateway va Celery task boundary orqali AI tahlil prototipi
+  mavjud; local/test rejimida eager execution ishlatiladi;
 - Smart Calculator prototipi mavjud;
+- Free/Pro/Business/Enterprise subscription catalogi, backend feature gate va
+  atomik analysis usage hisobi mavjud;
+- AI document generator backend, canonical editor storage, revision, approval
+  va PDF/DOCX export mavjud;
 - i18n (5 til) va dark mode interfeysi mavjud;
-- SQLite ishlatilmoqda;
-- scraper, subscription, team va competitor modullari to'liq emas.
+- SQLite local fallback ishlatilmoqda, production PostgreSQL 16 talab qiladi;
+- scraper, payment va Telegram/TMA modullari data-contract darajasida boshlangan,
+  lekin production runtime va provider lifecycle hali to'liq emas;
+- team membership/permission/session foundation mavjud, team tasklar keyingi
+  Enterprise bosqichida;
+- competitor baseline backend mavjud, trend/comparison export keyingi bosqichda.
 
 ### 3.1. Production'ga chiqishdan oldin yopilishi shart bo'lgan muammolar
+
+Quyidagi current register 2026-06-18 holatiga mos. Pastdagi eski audit
+jadvali tarixiy kontekst sifatida qoldirilgan va Phase 0 ishlarining katta
+qismi kodda yopilgan.
+
+| # | Muammo | Jiddiylik | Holat |
+|---|--------|-----------|-------|
+| 1 | Real portal scraping uchun legal/technical audit, source adapter va monitoring kerak | Yuqori | Ochiq |
+| 2 | Redis/Celery worker/beat production rejimida alohida servis sifatida tekshirilmagan | Yuqori | Ochiq |
+| 3 | PostgreSQL backup/restore drill va staging deploy runbook yakunlanmagan | Yuqori | Ochiq |
+| 4 | Full RAG: `AnalysisCitation`, OCR/chunk/embedding/pgvector pipeline va citation UI kerak | Yuqori | Ochiq |
+| 5 | Payment reconciliation, refund/reversal audit va provider credential policy kerak | Yuqori | Ochiq |
+| 6 | Telegram bot runtime, linking endpointlari, HMAC `initData` verification va replay protection kerak | Yuqori | Ochiq |
+| 7 | Production object/file storage abstraction va export file retention policy kerak | O'rta | Ochiq |
+| 8 | Structured logging, Sentry va operational alerting kerak | O'rta | Ochiq |
+| 9 | Legacy viewlardan bevosita qaytadigan `{"error": ...}` response'larni unified error envelopega o'tkazish kerak | O'rta | Qisman |
+| 10 | Frontend/API smoke yoki minimal E2E bilan login/register/onboarding/dashboard/team/superadmin oqimlari tasdiqlanishi kerak | O'rta | Ochiq |
+
+Tarixiy audit snapshot:
 
 | # | Muammo | Jiddiylik | Tegishli bo'lim |
 |---|--------|-----------|-----------------|
@@ -97,11 +153,11 @@ Repository hozir demo/MVP prototip bosqichida:
 | 7 | Groq SDK `requirements.txt` da yo'q | 🟡 O'rta | §10.2 |
 | 8 | OAuth callback tokenni URL query parametrida qaytaradi | 🟡 O'rta | §7.2 |
 | 9 | Manual tender yaratish `AllowAny` | 🔴 Kritik | §7.3, §17 |
-| 10 | Frontend private/public route guard vaqtincha o'chirilgan | 🔴 Kritik | §7.2, §16 |
-| 11 | Amaldagi tarif modeli faqat Free/Pro/Enterprise | 🟡 O'rta | §14.1 |
-| 12 | `subscriptions` modeli va payment lifecycle hali yo'q | 🔴 Kritik | §14 |
-| 13 | `documents` app va document editor route'lari mavjud emas | 🟡 O'rta | §6.4, §10.6 |
-| 14 | `teams` va `competitors` applari placeholder | 🟡 O'rta | §6.7, §11.1 |
+| 10 | Private/public route guard tiklangan; HttpOnly refresh cookie hali keyingi security phase | 🟡 O'rta | §7.2, §16 |
+| 11 | Tarif narxlari tasdiqlangan; payment reconciliation hali yo'q | 🟡 O'rta | §14.1 |
+| 12 | Payment provider lifecycle va callback verification hali yo'q | 🔴 Kritik | §14 |
+| 13 | Document editor frontend va production object storage hali ulanmagan | 🟡 O'rta | §6.4, §10.6 |
+| 14 | Team foundation va competitor baseline mavjud; task/trend/export keyingi phase | 🟡 O'rta | §6.7, §11.1 |
 | 15 | API error envelope endpointlar bo'yicha bir xil emas | 🟡 O'rta | §15 |
 | 16 | `docs/API.md` faqat amaldagi demo API snapshoti | 🟢 Axborot | §15 |
 | 17 | `_current_company()` olib tashlangan `username` field orqali demo user qidiradi | 🔴 Kritik | §4.3, §7.3 |
@@ -1384,12 +1440,12 @@ profil yaratib, cheklangan funksiyalar bilan tizimga kiradi.
 
 #### Hafta 2 — AI Document Generator backend
 
-- [ ] `TenderDocumentTemplate` va `GeneratedDocument` modellari/migratsiyasi.
-- [ ] Template versioning va admin boshqaruvi.
-- [ ] Company/tender context snapshot builder.
-- [ ] Async generation service va typed output validation.
-- [ ] Business + STIR + membership permission.
-- [ ] Generate, retrieve, update va version API'lari.
+- [x] `TenderDocumentTemplate` va `GeneratedDocument` modellari/migratsiyasi.
+- [x] Template versioning va admin boshqaruvi.
+- [x] Company/tender context snapshot builder.
+- [x] Async generation service va typed output validation.
+- [x] Business + STIR + membership permission.
+- [x] Generate, retrieve, update va version API'lari.
 
 **Hafta natijasi:** ruxsatli foydalanuvchi tender uchun xavfsiz draft hujjat
 yaratadi va backendda saqlaydi.
@@ -1397,10 +1453,10 @@ yaratadi va backendda saqlaydi.
 #### Hafta 3 — Inline Editor va export
 
 - [ ] Rich Text Editor integratsiyasi.
-- [ ] HTML sanitizatsiya allowlist.
-- [ ] Autosave va optimistic locking.
-- [ ] Preview, DOCX/PDF export.
-- [ ] User approval va audit trail.
+- [x] HTML sanitizatsiya allowlist.
+- [x] Autosave va optimistic locking backend contracti.
+- [x] Preview projection, DOCX/PDF export backend.
+- [x] User approval va audit trail backend.
 - [ ] Frontend component va E2E testlar.
 
 **Hafta natijasi:** draft platforma ichida tahrirlanadi, tasdiqlanadi va
@@ -1408,30 +1464,57 @@ eksport qilinadi.
 
 #### Hafta 4 — Competitor Intelligence
 
-- [ ] Yakunlangan tender participant/winner normalizatsiyasi.
-- [ ] `CompetitorAnalytics` modeli va aggregation task.
-- [ ] Rank, win rate va average discount hisoblari.
-- [ ] Lot/category/period API.
-- [ ] Business dashboard va freshness holati.
-- [ ] Data-quality va aggregation testlari.
+- [x] Yakunlangan tender participant/winner normalizatsiyasi.
+- [x] `CompetitorAnalytics` modeli va aggregation task.
+- [x] Rank, win rate va average discount hisoblari.
+- [x] Lot/category/period API.
+- [x] Business-gated dashboard API va freshness holati.
+- [x] Data-quality va aggregation testlari.
 
 **Hafta natijasi:** Business foydalanuvchi lot yoki kategoriya bo'yicha
 tekshiriladigan TOP competitor statistikalarini ko'radi.
 
 #### Superadmin planning track
 
-- [ ] Superadmin information architecture va capability matrix.
-- [ ] KPI/revenue/usage metric dictionary va freshness qoidalari.
-- [ ] User/company support timeline va sensitive-data masking.
-- [ ] Tarif, entitlement va subscription override state transitionlari.
+- [x] Superadmin information architecture va capability matrix.
+- [x] KPI/usage source status, range va freshness qoidalari; paymentga bog'liq
+  revenue formulalari provider/reconciliation domainigacha unavailable.
+- [x] User/company support timeline va sensitive-data masking.
+- [x] Tarif, entitlement va subscription override state transitionlari.
 - [ ] Payment/reconciliation amallari va step-up confirmation.
-- [ ] AI, scraping, queue va feature flag operations paneli.
-- [ ] Immutable admin audit va privileged-action alertlari.
+- [x] Feature flag, maintenance banner va template operations backend.
+- [ ] AI provider cost, scraping va queue adapter/retry operatsiyalari.
+- [x] Immutable admin audit, privileged action logging va export.
 
 **Natija:** mavjud Business/subscription va operatsion servislar ustidan
 xavfsiz, auditlanadigan yagona control plane spetsifikatsiyasi tayyor bo'ladi.
 
 ### Bosqich 0 — Xavfsizlik stabilizatsiyasi va canonical plan
+
+2026-06-18 current baseline:
+
+- [x] Eski hujjatlarni `docs/archive/` ga ko'chirish va ADR numberingni tiklash.
+- [x] `analysis/views.py`: write/read analysis endpointlarini `IsAuthenticated`
+  va company ownership bilan cheklash.
+- [x] Demo user bypassni production oqimidan ajratish.
+- [x] AI xatosida mock fallback o'rniga `analysis_status = FAILED` va xato
+  metadata qaytarish.
+- [x] `settings.py`: `APP_ENV`, `GEMINI_MODEL_ANALYSIS`,
+  `GEMINI_MODEL_EMBEDDING` va provider settinglarini ajratish.
+- [x] `print()` debug o'rniga logging ishlatish.
+- [x] OTP generatsiyasini `secrets`ga o'tkazish va OTP qiymatini production
+  logdan olib tashlash.
+- [x] OAuth callback tokenni URL'dan chiqarib, qisqa muddatli one-time code
+  exchange oqimiga o'tkazish.
+- [x] Frontend private route guard'larni tiklash.
+- [x] Backend va frontend lint/test muhitini barqaror qilish.
+- [x] `.env.example`ga `DEMO_MODE=False` va target model settinglarini qo'shish.
+- [x] `AllowAny` audit testini CI ga qo'shish.
+- [x] Analysis testlarini provider success/failure contractiga o'tkazish.
+- [ ] Kalkulyator formulasini domain service sifatida versiyalash.
+- [ ] Legacy direct error responselarni unified envelopega to'liq o'tkazish.
+
+Tarixiy checklist:
 
 - [ ] Eski hujjatlarni `docs/archive/` ga ko'chirish.
 - [ ] `analysis/views.py`: `AllowAny` → `IsAuthenticated` (barcha write endpointlar).
@@ -1460,12 +1543,12 @@ ownership testlari o'tadi, `AllowAny` audit testi green.
 
 ### Bosqich 1 — PostgreSQL, Redis, Celery va Docker
 
-- [ ] PostgreSQL 16 konfiguratsiyasi va migratsiya.
+- [x] PostgreSQL 16 konfiguratsiyasi va migratsiya.
 - [ ] pgvector extension o'rnatish va `vector(768)` column qo'shish.
-- [ ] `pg_trgm` extension va tender LIKE qidiruvi uchun GIN indekslar.
+- [x] `pg_trgm` extension va tender LIKE qidiruvi uchun GIN indekslar.
 - [ ] Redis va Celery worker/beat setup.
 - [ ] Docker Compose (backend, worker, beat, redis, postgres).
-- [ ] Environment-specific settings (`local`, `staging`, `production`).
+- [x] Environment-specific settings (`local`, `staging`, `production`).
 - [ ] Core modellarni yangi schema bo'yicha migratsiya qilish.
 - [ ] `CompanyProfile.user` ownershipini `CompanyMember`ga migrate qilish.
 - [ ] Tender identity'ni `TenderSource + external_id` unique contractiga
@@ -1554,14 +1637,16 @@ tekshirilgan, subscription lifecycle to'liq ishlaydi.
 ### Bosqich 6.1 — Superadmin Console
 
 - [ ] Alohida `/superadmin/` layout va capability-based route guard.
-- [ ] Real-time overview: growth, revenue, subscription, usage va health.
-- [ ] User/company qidiruvi, support timeline va account controls.
-- [ ] Tarif/feature/limit konfiguratsiyasi va entitlement preview.
-- [ ] Subscription lifecycle va xavfsiz manual override.
+- [x] Backend overview: growth, subscription, usage, freshness va source
+  status; revenue authoritative source bo'lmagani uchun unavailable.
+- [x] User/company qidiruvi, support timeline va account controls backend.
+- [x] Tarif/feature/limit konfiguratsiyasi va entitlement preview backend.
+- [x] Subscription lifecycle, scheduled downgrade va xavfsiz manual override.
 - [ ] Payment, webhook va reconciliation operatsiyalari.
-- [ ] Business feature usage, AI cost va scraping operations.
-- [ ] Template publish/unpublish va system feature flags.
-- [ ] Immutable admin audit, MFA va step-up authentication.
+- [ ] To'liq AI cost, scraping va queue operations adapterlari.
+- [x] Business usage agregatlari va feature kill switch.
+- [x] Template publish/unpublish, maintenance banner va system feature flags.
+- [x] Immutable admin audit, MFA adapter va step-up authentication backend.
 
 **Exit criteria:** superadmin barcha platforma operatsiyalarini mavjud domain
 servislari orqali boshqaradi; kritik action sababsiz yoki auditsiz bajarilmaydi.
@@ -1702,9 +1787,14 @@ Muhim arxitektura qarorlari `docs/adr/` ichida ADR sifatida yuritiladi.
 | ADR-008 | Embedding model va pgvector konfiguratsiyasi | Qabul qilingan |
 | ADR-009 | CLICK API v2 integratsiya protokoli | Kutilmoqda |
 | ADR-010 | STIR registry provider, cache va user-confirmed draft | Qabul qilingan |
-| ADR-011 | Document generator template/version/editor modeli | Kutilmoqda |
-| ADR-012 | Competitor analytics aggregation va data quality | Kutilmoqda |
-| ADR-013 | Superadmin capability, step-up auth va immutable audit | Kutilmoqda |
+| ADR-011 | Document generator template/version/editor modeli | Qabul qilingan |
+| ADR-012 | Competitor analytics aggregation va data quality | Qabul qilingan |
+| ADR-013 | Superadmin capability, step-up auth va immutable audit | Qabul qilingan |
+| ADR-014 | Subscription entitlement va atomik usage authority | Qabul qilingan |
+| ADR-015 | Document export engine va signed download | Qabul qilingan |
+| ADR-016 | Company ownership enforcement | Qabul qilingan |
+| ADR-017 | Manual tender identity | Qabul qilingan |
+| ADR-018 | Telegram Mini App identity, linking va session security | Qabul qilingan reja |
 
 Ushbu `Plan.md` strategiyani belgilaydi. Implementatsiya tafsiloti ADR,
 OpenAPI schema va issue trackerda yuritiladi.
@@ -1735,5 +1825,6 @@ Hozirgi va rejalashtirilgan Python dependencylar:
 | pdfplumber | ≥0.11 | Bosqich 2 | PDF parsing |
 | python-docx | ≥1.1 | Bosqich 2 | DOCX parsing |
 | bleach | ≥6.1 | Hafta 3 | Rich-text HTML sanitizatsiya |
+| reportlab | ≥4.2 | Hafta 3 | PDF document export |
 | aiogram | ≥3.7 | Bosqich 5 | Telegram bot |
 | sentry-sdk[django] | ≥2.0 | Bosqich 1 | Error tracking |
