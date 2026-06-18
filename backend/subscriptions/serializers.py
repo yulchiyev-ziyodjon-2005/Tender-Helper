@@ -3,6 +3,7 @@ from rest_framework import serializers
 from subscriptions.constants import Feature
 from subscriptions.models import (
     CompanySubscription,
+    PaymentTransaction,
     SubscriptionPlan,
     UsageRecord,
 )
@@ -42,6 +43,13 @@ class CompanySubscriptionSerializer(serializers.ModelSerializer):
             'current_period_start',
             'current_period_end',
             'cancel_at_period_end',
+            'scheduled_plan_id',
+            'scheduled_change_at',
+            'scheduled_period_end',
+            'sms_allowed_monthly',
+            'sms_sent_this_month',
+            'daily_sms_cap',
+            'sms_counter_period_start',
             'created_at',
             'updated_at',
         ]
@@ -83,6 +91,10 @@ class EntitlementSerializer(serializers.Serializer):
 class CheckoutSerializer(serializers.Serializer):
     company_id = serializers.UUIDField(required=False)
     plan_code = serializers.SlugField()
+    provider = serializers.ChoiceField(
+        choices=PaymentTransaction.Provider.choices,
+        default=PaymentTransaction.Provider.CLICK,
+    )
 
     def validate_plan_code(self, value):
         if not SubscriptionPlan.objects.filter(
@@ -92,3 +104,31 @@ class CheckoutSerializer(serializers.Serializer):
         ).exists():
             raise serializers.ValidationError('Unknown or unavailable plan.')
         return value
+
+
+class PaymentTransactionSerializer(serializers.ModelSerializer):
+    plan = SubscriptionPlanSerializer(read_only=True)
+
+    class Meta:
+        model = PaymentTransaction
+        fields = [
+            'public_id',
+            'company_id',
+            'plan',
+            'provider',
+            'status',
+            'merchant_trans_id',
+            'amount',
+            'currency',
+            'billing_period',
+            'provider_transaction_id',
+            'provider_payment_id',
+            'prepared_at',
+            'paid_at',
+            'canceled_at',
+            'error_code',
+            'error_message',
+            'created_at',
+            'updated_at',
+        ]
+        read_only_fields = fields

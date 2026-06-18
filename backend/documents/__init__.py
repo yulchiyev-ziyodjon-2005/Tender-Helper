@@ -1,0 +1,1 @@
+"""Generated tender document lifecycle."""

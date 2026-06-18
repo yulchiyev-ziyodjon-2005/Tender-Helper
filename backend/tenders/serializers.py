@@ -11,12 +11,18 @@ class TenderDocumentChunkSerializer(serializers.ModelSerializer):
 
 
 class TenderLotSerializer(serializers.ModelSerializer):
-    chunks_count = serializers.IntegerField(source='chunks.count', read_only=True)
+    chunks_count = serializers.SerializerMethodField()
+    source = serializers.SlugRelatedField(
+        slug_field='code',
+        read_only=True,
+    )
 
     class Meta:
         model = TenderLot
         fields = [
             'id',
+            'source',
+            'external_id',
             'lot_number',
             'platform_source',
             'title',
@@ -34,6 +40,15 @@ class TenderLotSerializer(serializers.ModelSerializer):
             'updated_at',
         ]
         read_only_fields = ['id', 'created_at', 'updated_at', 'chunks_count']
+
+    def get_chunks_count(self, obj):
+        counted_chunks = getattr(obj, 'counted_chunks', None)
+        if counted_chunks is not None:
+            return len(counted_chunks)
+        prefetched = getattr(obj, '_prefetched_objects_cache', {}).get('chunks')
+        if prefetched is not None:
+            return len(prefetched)
+        return obj.chunks.count()
 
 
 class TenderLotDetailSerializer(TenderLotSerializer):

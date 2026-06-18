@@ -52,8 +52,24 @@ api_v1_patterns = [
             namespace='subscriptions',
         ),
     ),
-    path('team/', include('teams.urls')),
+    path(
+        'documents/',
+        include(('documents.urls', 'documents'), namespace='documents'),
+    ),
+    path(
+        'team/',
+        include(('teams.urls', 'teams'), namespace='teams-legacy'),
+    ),
+    path('teams/', include(('teams.urls', 'teams'), namespace='teams')),
     path('competitors/', include('competitors.urls')),
+    path(
+        'payments/',
+        include(('subscriptions.payment_urls', 'payments'), namespace='payments'),
+    ),
+    path(
+        'admin/',
+        include(('controlplane.urls', 'controlplane'), namespace='controlplane'),
+    ),
 ]
 
 # ──────────────── Root URL Patterns ────────────────

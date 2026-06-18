@@ -1,0 +1,1 @@
+"""Competitor intelligence domain services."""

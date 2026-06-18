@@ -1,6 +1,13 @@
 from rest_framework import serializers
 
-from .models import AITenderAnalysis, SmartCalculator
+from .models import (
+    AITenderAnalysis,
+    AnalysisFinding,
+    AnalysisRun,
+    LegalKnowledgeSource,
+    ModelInvocation,
+    SmartCalculator,
+)
 
 
 class StartAnalysisSerializer(serializers.Serializer):
@@ -50,11 +57,100 @@ class AITenderAnalysisSerializer(serializers.ModelSerializer):
         }
 
 
-class AnalysisStatusSerializer(serializers.ModelSerializer):
+class AnalysisFindingSerializer(serializers.ModelSerializer):
     class Meta:
-        model = AITenderAnalysis
-        fields = ['id', 'analysis_status', 'eligibility_score', 'error_message', 'updated_at']
+        model = AnalysisFinding
+        fields = [
+            'id',
+            'finding_type',
+            'title',
+            'description',
+            'risk_factor',
+            'rating_score',
+            'compliance_status',
+            'citations',
+            'created_at',
+        ]
         read_only_fields = fields
+
+
+class ModelInvocationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ModelInvocation
+        fields = [
+            'id',
+            'provider',
+            'model_name',
+            'prompt_version',
+            'token_count',
+            'prompt_tokens',
+            'output_tokens',
+            'calculated_cost',
+            'latency_ms',
+            'status',
+            'error_code',
+            'created_at',
+        ]
+        read_only_fields = fields
+
+
+class AnalysisStatusSerializer(serializers.ModelSerializer):
+    analysis_id = serializers.UUIDField(source='analysis.id', read_only=True)
+    analysis_status = serializers.CharField(
+        source='analysis.analysis_status',
+        read_only=True,
+    )
+    eligibility_score = serializers.IntegerField(
+        source='analysis.eligibility_score',
+        read_only=True,
+    )
+    findings = AnalysisFindingSerializer(many=True, read_only=True)
+    model_invocations = ModelInvocationSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = AnalysisRun
+        fields = [
+            'id',
+            'analysis_id',
+            'status',
+            'analysis_status',
+            'progress_percent',
+            'eligibility_score',
+            'started_at',
+            'completed_at',
+            'error_code',
+            'error_message',
+            'findings',
+            'model_invocations',
+            'created_at',
+            'updated_at',
+        ]
+        read_only_fields = fields
+
+
+class StartAnalysisResponseSerializer(serializers.ModelSerializer):
+    analysis_id = serializers.UUIDField(source='analysis.id', read_only=True)
+    status_url = serializers.SerializerMethodField()
+    result_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = AnalysisRun
+        fields = [
+            'id',
+            'analysis_id',
+            'status',
+            'progress_percent',
+            'status_url',
+            'result_url',
+            'created_at',
+        ]
+        read_only_fields = fields
+
+    def get_status_url(self, obj):
+        return f'/analysis/{obj.id}/status/'
+
+    def get_result_url(self, obj):
+        return f'/analysis/{obj.id}/result/'
 
 
 class CalculatorInputSerializer(serializers.Serializer):
@@ -94,3 +190,22 @@ class SmartCalculatorSerializer(serializers.ModelSerializer):
             + obj.labor_cost
             + obj.other_expenses
         )
+
+
+class LegalKnowledgeSourceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LegalKnowledgeSource
+        fields = [
+            'code',
+            'name',
+            'authority_level',
+            'base_url',
+            'allowed_domains',
+            'source_rank',
+            'requires_effective_date_check',
+            'requires_manual_review',
+            'is_active',
+            'metadata',
+            'updated_at',
+        ]
+        read_only_fields = fields

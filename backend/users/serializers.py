@@ -5,6 +5,7 @@ Auth va profil uchun serializerlar.
 """
 
 from django.contrib.auth.password_validation import validate_password
+from django.core import signing
 from django.db import transaction
 from rest_framework import serializers
 
@@ -58,6 +59,7 @@ class EmailRegisterSerializer(serializers.ModelSerializer):
     """Account va kompaniya profilini birga ro'yxatdan o'tkazish."""
     password = serializers.CharField(write_only=True, min_length=8)
     phone_number = serializers.CharField(required=False, allow_blank=True, max_length=15)
+    phone_verification_token = serializers.CharField(write_only=True)
     company_name = serializers.CharField(write_only=True, max_length=500)
     company_type = serializers.ChoiceField(
         write_only=True,
@@ -108,6 +110,7 @@ class EmailRegisterSerializer(serializers.ModelSerializer):
             'password',
             'full_name',
             'phone_number',
+            'phone_verification_token',
             'company_name',
             'company_type',
             'industry',
@@ -145,6 +148,34 @@ class EmailRegisterSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Bu telefon raqami allaqachon ishlatilgan")
         return phone_number
 
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        phone_number = attrs.get('phone_number')
+        token = attrs.get('phone_verification_token')
+        if not phone_number:
+            raise serializers.ValidationError({
+                'phone_number': "Telefon raqamini tasdiqlash majburiy.",
+            })
+        try:
+            payload = signing.loads(
+                token,
+                salt='registration-phone-verification',
+                max_age=10 * 60,
+            )
+        except signing.SignatureExpired as exc:
+            raise serializers.ValidationError({
+                'phone_verification_token': "Telefon tasdig'i muddati tugagan.",
+            }) from exc
+        except signing.BadSignature as exc:
+            raise serializers.ValidationError({
+                'phone_verification_token': "Telefon tasdig'i yaroqsiz.",
+            }) from exc
+        if payload.get('phone_number') != phone_number or payload.get('purpose') != 'register':
+            raise serializers.ValidationError({
+                'phone_verification_token': "Tasdiqlangan telefon raqami mos emas.",
+            })
+        return attrs
+
     def validate_stir(self, value):
         if value in ('', None):
             return None
@@ -156,6 +187,7 @@ class EmailRegisterSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def create(self, validated_data):
+        validated_data.pop('phone_verification_token')
         company_data = {
             'company_name': validated_data.pop('company_name'),
             'company_type': validated_data.pop('company_type'),
@@ -195,6 +227,34 @@ class EmailLoginSerializer(serializers.Serializer):
     """Email va parol orqali kirish."""
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
+
+
+class ForgotPasswordSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+
+class ResetPasswordSerializer(serializers.Serializer):
+    uid = serializers.CharField()
+    token = serializers.CharField()
+    new_password = serializers.CharField(write_only=True, min_length=8)
+
+    def validate_new_password(self, value):
+        validate_password(value)
+        return value
+
+
+class ChangePasswordSerializer(serializers.Serializer):
+    current_password = serializers.CharField(write_only=True)
+    new_password = serializers.CharField(write_only=True, min_length=8)
+
+    def validate_current_password(self, value):
+        if not self.context['request'].user.check_password(value):
+            raise serializers.ValidationError('Current password is incorrect.')
+        return value
+
+    def validate_new_password(self, value):
+        validate_password(value, self.context['request'].user)
+        return value
 
 
 class UserProfileSerializer(serializers.ModelSerializer):

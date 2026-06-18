@@ -27,7 +27,11 @@ def _get_or_create_usage_record(effective, company, metric, limit):
         'limit_snapshot': limit,
     }
     try:
-        return UsageRecord.objects.get_or_create(**lookup, defaults=defaults)[0]
+        with transaction.atomic():
+            return UsageRecord.objects.get_or_create(
+                **lookup,
+                defaults=defaults,
+            )[0]
     except IntegrityError:
         return UsageRecord.objects.get(**lookup)
 
@@ -45,6 +49,7 @@ def consume_usage(company, metric, *, amount=1):
         metric,
         limit,
     )
+    limit = record.limit_snapshot
 
     records = UsageRecord.objects.filter(pk=record.pk)
     if limit is None:

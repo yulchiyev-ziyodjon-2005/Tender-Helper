@@ -14,6 +14,10 @@ urlpatterns = [
     # Email Authentication
     path('register/', views.email_register_view, name='email-register'),
     path('login/', views.email_login_view, name='email-login'),
+    path('change-password/', views.change_password_view, name='change-password'),
+    path('verify-phone/', views.verify_registration_phone_view, name='verify-registration-phone'),
+    path('forgot-password/', views.forgot_password_view, name='forgot-password'),
+    path('reset-password/', views.reset_password_view, name='reset-password'),
 
     # OTP Authentication
     path('send-otp/', views.send_otp_view, name='send-otp'),
@@ -31,4 +35,5 @@ urlpatterns = [
 
     # User Profile
     path('me/', views.user_profile_view, name='user-profile'),
+    path('session/', views.session_capabilities_view, name='session-capabilities'),
 ]

@@ -1,16 +1,18 @@
 import uuid
 from datetime import timedelta
 
+from django.db.models import Prefetch
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.filters import OrderingFilter, SearchFilter
+from rest_framework.filters import OrderingFilter
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from .filters import TenderLotFilter
-from .models import TenderDocumentChunk, TenderLot
+from .models import TenderDocumentChunk, TenderLot, TenderSource
+from .search_backends import TenderSearchFilter
 from .serializers import (
     ManualTenderSerializer,
     TenderLotDetailSerializer,
@@ -22,17 +24,36 @@ class TenderListView(generics.ListAPIView):
     serializer_class = TenderLotSerializer
     permission_classes = [AllowAny]
     filterset_class = TenderLotFilter
-    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-    search_fields = ['title', 'buyer_name', 'lot_number']
+    filter_backends = [
+        DjangoFilterBackend,
+        TenderSearchFilter,
+        OrderingFilter,
+    ]
+    search_fields = ['title', 'buyer_name', 'lot_number', 'category']
     ordering_fields = ['posted_date', 'deadline', 'start_price']
     ordering = ['-posted_date']
 
     def get_queryset(self):
-        return TenderLot.objects.filter(status=TenderLot.Status.ACTIVE)
+        return TenderLot.objects.filter(
+            status=TenderLot.Status.ACTIVE,
+        ).select_related(
+            'source',
+        ).prefetch_related(
+            Prefetch(
+                'chunks',
+                queryset=TenderDocumentChunk.objects.only(
+                    'id',
+                    'tender_lot_id',
+                ),
+                to_attr='counted_chunks',
+            ),
+        )
 
 
 class TenderDetailView(generics.RetrieveAPIView):
-    queryset = TenderLot.objects.all()
+    queryset = TenderLot.objects.select_related('source').prefetch_related(
+        'chunks',
+    )
     serializer_class = TenderLotDetailSerializer
     permission_classes = [AllowAny]
 
@@ -47,8 +68,12 @@ def manual_tender_view(request):
     serializer = ManualTenderSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
     data = serializer.validated_data
+    manual_source = TenderSource.objects.get(
+        code=TenderLot.PlatformSource.MANUAL,
+    )
 
     tender = TenderLot.objects.create(
+        source=manual_source,
         lot_number=f"MANUAL-{uuid.uuid4().hex[:10].upper()}",
         platform_source=TenderLot.PlatformSource.MANUAL,
         title=data['title'],

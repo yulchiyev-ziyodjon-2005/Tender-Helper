@@ -8,6 +8,8 @@ Phone + OTP va Google OAuth orqali autentifikatsiya.
 import uuid
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
+from django.db.models import Q
+from django.db.models.functions import Lower
 
 
 class CustomUserManager(BaseUserManager):
@@ -124,6 +126,13 @@ class CustomUser(AbstractUser):
         verbose_name="Auth usuli"
     )
 
+    auth_version = models.PositiveIntegerField(default=0)
+    mfa_enabled = models.BooleanField(default=False)
+    mfa_method = models.CharField(max_length=30, blank=True, default='')
+    mfa_secret_encrypted = models.TextField(blank=True, default='')
+    mfa_recovery_codes_hash = models.JSONField(default=list, blank=True)
+    last_mfa_verified_at = models.DateTimeField(null=True, blank=True)
+
     # Vaqt belgilari
     date_joined = models.DateTimeField(
         auto_now_add=True,
@@ -147,6 +156,20 @@ class CustomUser(AbstractUser):
         verbose_name = 'Foydalanuvchi'
         verbose_name_plural = 'Foydalanuvchilar'
         ordering = ['-date_joined']
+        constraints = [
+            models.CheckConstraint(
+                condition=(
+                    (Q(phone_number__isnull=False) & ~Q(phone_number=''))
+                    | (Q(email__isnull=False) & ~Q(email=''))
+                ),
+                name='user_has_login_identity',
+            ),
+            models.UniqueConstraint(
+                Lower('email'),
+                condition=Q(email__isnull=False) & ~Q(email=''),
+                name='unique_user_email_ci',
+            ),
+        ]
 
     def __str__(self):
         return self.full_name or self.phone_number or self.email or str(self.id)

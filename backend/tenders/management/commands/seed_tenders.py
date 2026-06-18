@@ -12,7 +12,7 @@ from decimal import Decimal
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
-from tenders.models import TenderDocumentChunk, TenderLot
+from tenders.models import TenderDocumentChunk, TenderLot, TenderSource
 
 
 TENDER_DATA = [
@@ -225,9 +225,13 @@ class Command(BaseCommand):
 
         for data in TENDER_DATA:
             lot_number = data['lot_number']
+            source = TenderSource.objects.get(code=data['platform_source'])
 
             # Skip if already exists
-            if TenderLot.objects.filter(lot_number=lot_number).exists():
+            if TenderLot.objects.filter(
+                source=source,
+                external_id=lot_number,
+            ).exists():
                 self.stdout.write(self.style.NOTICE(f"  [INFO]  {lot_number} - allaqachon mavjud, o'tkazildi"))
                 continue
 
@@ -236,6 +240,8 @@ class Command(BaseCommand):
             posted_days_ago = random.randint(1, 5)
 
             tender = TenderLot.objects.create(
+                source=source,
+                external_id=lot_number,
                 lot_number=lot_number,
                 platform_source=data['platform_source'],
                 title=data['title'],

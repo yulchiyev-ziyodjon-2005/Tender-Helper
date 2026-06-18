@@ -1,1 +1,1 @@
-# management package
+"""Tender management commands."""

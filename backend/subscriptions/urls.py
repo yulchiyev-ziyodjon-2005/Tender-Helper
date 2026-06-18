@@ -16,4 +16,10 @@ urlpatterns = [
         name='feature-check',
     ),
     path('checkout/', views.checkout_view, name='checkout'),
+    path('payments/click/prepare/', views.click_prepare_view, name='click-prepare'),
+    path(
+        'payments/click/complete/',
+        views.click_complete_view,
+        name='click-complete',
+    ),
 ]

@@ -9,14 +9,12 @@ class SubscriptionAPIException(APIException):
     def __init__(self, *, code, message, details=None, status_code=None):
         if status_code is not None:
             self.status_code = status_code
-        super().__init__(
-            detail={
-                'code': code,
-                'message': message,
-                'details': details or {},
-            },
-            code=code,
-        )
+        super().__init__(detail=message, code=code)
+        self.detail = {
+            'code': code,
+            'message': message,
+            'details': details or {},
+        }
 
 
 class CompanyAccessDenied(SubscriptionAPIException):
@@ -36,6 +34,15 @@ class CompanyRoleDenied(SubscriptionAPIException):
                 'feature': feature,
                 'required_roles': list(required_roles),
             },
+        )
+
+
+class CompanyPermissionDenied(SubscriptionAPIException):
+    def __init__(self, *, permission):
+        super().__init__(
+            code='company_permission_denied',
+            message="Xodimga bu amal uchun explicit ruxsat berilmagan.",
+            details={'permission': permission},
         )
 
 
@@ -76,7 +83,20 @@ class UsageLimitExceeded(SubscriptionAPIException):
                 'plan': plan,
                 'limit': limit,
                 'used': used,
-                'period_end': period_end,
+                'period_end': period_end.isoformat(),
             },
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+        )
+
+
+class FeatureTemporarilyDisabled(SubscriptionAPIException):
+    def __init__(self, *, feature, reason=''):
+        super().__init__(
+            code='feature_temporarily_disabled',
+            message='Bu funksiya vaqtincha o‘chirilgan.',
+            details={
+                'feature': feature,
+                'reason': reason,
+            },
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
         )

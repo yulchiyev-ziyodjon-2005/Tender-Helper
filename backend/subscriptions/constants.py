@@ -19,6 +19,7 @@ class Feature:
 
 class CompanyRole:
     OWNER = 'owner'
+    ADMIN = 'admin'
     MANAGER = 'manager'
     ANALYST = 'analyst'
     VIEWER = 'viewer'
@@ -34,25 +35,27 @@ class FeaturePolicy:
 FEATURE_POLICIES = {
     Feature.DOCUMENT_GENERATION: FeaturePolicy(
         required_plan='business',
-        allowed_roles=(CompanyRole.OWNER, CompanyRole.MANAGER),
+        allowed_roles=(CompanyRole.OWNER, CompanyRole.ADMIN, CompanyRole.MANAGER),
         requires_stir=True,
     ),
     Feature.DOCUMENT_EXPORT: FeaturePolicy(
         required_plan='business',
-        allowed_roles=(CompanyRole.OWNER, CompanyRole.MANAGER),
+        allowed_roles=(CompanyRole.OWNER, CompanyRole.ADMIN, CompanyRole.MANAGER),
         requires_stir=True,
     ),
     Feature.COMPETITOR_INTELLIGENCE: FeaturePolicy(
         required_plan='business',
         allowed_roles=(
             CompanyRole.OWNER,
+            CompanyRole.ADMIN,
             CompanyRole.MANAGER,
             CompanyRole.ANALYST,
         ),
     ),
     Feature.TEAM_COLLABORATION: FeaturePolicy(
         required_plan='business',
-        allowed_roles=(CompanyRole.OWNER, CompanyRole.MANAGER),
+        allowed_roles=(CompanyRole.OWNER, CompanyRole.ADMIN, CompanyRole.MANAGER),
+        requires_stir=True,
     ),
     Feature.ADVANCED_AUDIT: FeaturePolicy(
         required_plan='enterprise',
@@ -66,4 +69,24 @@ METRIC_LIMIT_KEYS = {
     'document_generation': 'document_generation_monthly',
     'document_export': 'document_export_monthly',
     'competitor_query': 'competitor_query_monthly',
+}
+
+
+SMS_QUOTA_MATRIX = {
+    'free': {
+        'sms_allowed_monthly': 0,
+        'daily_sms_cap': 0,
+    },
+    'pro': {
+        'sms_allowed_monthly': 100,
+        'daily_sms_cap': 5,
+    },
+    'business': {
+        'sms_allowed_monthly': 500,
+        'daily_sms_cap': 20,
+    },
+    'enterprise': {
+        'sms_allowed_monthly': 500,
+        'daily_sms_cap': 20,
+    },
 }

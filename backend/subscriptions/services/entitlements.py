@@ -4,6 +4,7 @@ from subscriptions.constants import FEATURE_POLICIES, Feature
 from subscriptions.exceptions import (
     CompanyRoleDenied,
     FeatureNotAvailable,
+    FeatureTemporarilyDisabled,
     StirRequired,
 )
 from subscriptions.services.billing import get_effective_subscription
@@ -32,6 +33,14 @@ def _evaluate_feature(membership, effective, feature):
             feature=feature,
             required_plan=policy.required_plan,
             requires_stir=policy.requires_stir,
+        )
+    from controlplane.services.flags import feature_is_enabled
+
+    feature_enabled, disabled_reason = feature_is_enabled(feature)
+    if not feature_enabled:
+        raise FeatureTemporarilyDisabled(
+            feature=feature,
+            reason=disabled_reason,
         )
     if membership.role not in policy.allowed_roles:
         raise CompanyRoleDenied(
@@ -71,7 +80,12 @@ def list_entitlements(user, company):
                 effective,
                 feature,
             )
-        except (FeatureNotAvailable, CompanyRoleDenied, StirRequired) as exc:
+        except (
+            FeatureNotAvailable,
+            FeatureTemporarilyDisabled,
+            CompanyRoleDenied,
+            StirRequired,
+        ) as exc:
             entitlements.append(Entitlement(
                 feature=feature,
                 allowed=False,

@@ -9,8 +9,12 @@ import secrets
 from urllib.parse import urlencode
 
 from django.conf import settings
+from django.contrib.auth.tokens import default_token_generator
 from django.core import signing
 from django.core.cache import cache
+from django.core.mail import send_mail
+from django.utils.encoding import force_bytes, force_str
+from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.shortcuts import redirect
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
@@ -18,15 +22,19 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from companies.models import CompanyProfile
 from companies.serializers import CompanyProfileSerializer
 from .models import CustomUser
 from .serializers import (
-    SendOTPSerializer,
-    VerifyOTPSerializer,
+    EmailLoginSerializer,
+    EmailRegisterSerializer,
+    ChangePasswordSerializer,
+    ForgotPasswordSerializer,
     GoogleAuthSerializer,
+    ResetPasswordSerializer,
+    SendOTPSerializer,
     UserProfileSerializer,
     UserUpdateSerializer,
+    VerifyOTPSerializer,
 )
 from .services.otp_service import generate_otp, verify_otp, send_otp_sms
 from .services.google_auth import verify_google_token
@@ -35,6 +43,7 @@ from .services.google_oauth import (
     exchange_code_for_user_info,
     is_google_oauth_configured,
 )
+from .services.session_capabilities import build_session_capabilities
 
 logger = logging.getLogger(__name__)
 GOOGLE_EXCHANGE_TTL_SECONDS = 120
@@ -43,6 +52,7 @@ GOOGLE_EXCHANGE_TTL_SECONDS = 120
 def _get_tokens_for_user(user):
     """JWT token juftligini generatsiya qilish."""
     refresh = RefreshToken.for_user(user)
+    refresh['auth_version'] = user.auth_version
     return {
         'access': str(refresh.access_token),
         'refresh': str(refresh),
@@ -50,16 +60,23 @@ def _get_tokens_for_user(user):
 
 
 def _get_primary_company(user):
-    return CompanyProfile.objects.filter(user=user).order_by('-created_at').first()
+    from subscriptions.services.membership import accessible_companies
+
+    return accessible_companies(user).order_by('-created_at').first()
 
 
 def _auth_payload(user, is_new_user):
     company = _get_primary_company(user)
+    force_password_change = user.company_memberships.filter(
+        is_active=True,
+        force_password_change=True,
+    ).exists()
     return {
         'tokens': _get_tokens_for_user(user),
         'user': UserProfileSerializer(user).data,
         'company': CompanyProfileSerializer(company).data if company else None,
         'is_new_user': is_new_user,
+        'force_password_change': force_password_change,
     }
 
 
@@ -190,6 +207,39 @@ def verify_otp_view(request):
         logger.info(f"New user registered via OTP: {phone_number}")
 
     return Response(_auth_payload(user, created), status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def verify_registration_phone_view(request):
+    """Verify an OTP without creating a user and return a registration proof."""
+    serializer = VerifyOTPSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    phone_number = serializer.validated_data['phone_number']
+    otp_code = serializer.validated_data['otp']
+
+    is_valid, error = verify_otp(phone_number, otp_code)
+    if not is_valid:
+        error_messages = {
+            'otp_expired': "Kod muddati tugagan. Yangi kod so'rang",
+            'invalid_otp': "Noto'g'ri kod. Qayta kiriting",
+            'max_attempts': "Urinishlar soni tugadi. Yangi kod so'rang",
+        }
+        return Response(
+            {'error': error, 'message': error_messages.get(error, 'Xatolik')},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    verification_token = signing.dumps(
+        {'phone_number': phone_number, 'purpose': 'register'},
+        salt='registration-phone-verification',
+        compress=True,
+    )
+    return Response({
+        'phone_number': phone_number,
+        'verification_token': verification_token,
+        'expires_in': 10 * 60,
+    })
 
 
 # ══════════════════════════════════════════════════
@@ -356,9 +406,6 @@ def google_oauth_exchange_view(request):
 #  Email Authentication
 # ══════════════════════════════════════════════════
 
-from django.contrib.auth import authenticate
-from .serializers import EmailRegisterSerializer, EmailLoginSerializer
-
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def email_register_view(request):
@@ -403,6 +450,80 @@ def email_login_view(request):
     return Response(_auth_payload(user, False), status=status.HTTP_200_OK)
 
 
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def forgot_password_view(request):
+    serializer = ForgotPasswordSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    email = serializer.validated_data['email'].lower()
+    user = CustomUser.objects.filter(email__iexact=email, is_active=True).first()
+
+    if user and user.has_usable_password():
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        token = default_token_generator.make_token(user)
+        reset_url = f'{settings.FRONTEND_BASE_URL}/reset-password?uid={uid}&token={token}'
+        send_mail(
+            subject='TenderHelper parolini tiklash',
+            message=(
+                "Parolingizni yangilash uchun quyidagi havolani oching:\n\n"
+                f"{reset_url}\n\n"
+                "Agar bu so'rovni siz yubormagan bo'lsangiz, xabarni e'tiborsiz qoldiring."
+            ),
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[user.email],
+            fail_silently=False,
+        )
+
+    return Response({
+        'message': "Agar email ro'yxatdan o'tgan bo'lsa, tiklash havolasi yuborildi.",
+    })
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def reset_password_view(request):
+    serializer = ResetPasswordSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    try:
+        user_id = force_str(urlsafe_base64_decode(serializer.validated_data['uid']))
+        user = CustomUser.objects.get(pk=user_id, is_active=True)
+    except (ValueError, TypeError, OverflowError, CustomUser.DoesNotExist):
+        user = None
+
+    if user is None or not default_token_generator.check_token(
+        user,
+        serializer.validated_data['token'],
+    ):
+        return Response(
+            {'error': 'invalid_token', 'message': "Tiklash havolasi yaroqsiz yoki muddati tugagan."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    user.set_password(serializer.validated_data['new_password'])
+    user.auth_version += 1
+    user.save(update_fields=['password', 'auth_version', 'updated_at'])
+    return Response({'message': 'Parol muvaffaqiyatli yangilandi.'})
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def change_password_view(request):
+    serializer = ChangePasswordSerializer(
+        data=request.data,
+        context={'request': request},
+    )
+    serializer.is_valid(raise_exception=True)
+    user = request.user
+    user.set_password(serializer.validated_data['new_password'])
+    user.auth_version += 1
+    user.save(update_fields=['password', 'auth_version', 'updated_at'])
+    user.company_memberships.filter(
+        is_active=True,
+        force_password_change=True,
+    ).update(force_password_change=False)
+    return Response(_auth_payload(user, False))
+
+
 # ══════════════════════════════════════════════════
 #  User Profile
 # ══════════════════════════════════════════════════
@@ -434,3 +555,26 @@ def user_profile_view(request):
             UserProfileSerializer(user).data,
             status=status.HTTP_200_OK,
         )
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def session_capabilities_view(request):
+    """
+    GET /api/v1/auth/session/ - UI bootstrap uchun role, permission,
+    entitlement, usage va navigation holatini qaytaradi.
+    """
+    payload = build_session_capabilities(
+        request.user,
+        company_id=request.query_params.get('company_id'),
+    )
+    if payload is None:
+        return Response(
+            {
+                'code': 'company_not_found',
+                'message': 'Kompaniya topilmadi yoki sizga tegishli emas.',
+                'details': {},
+            },
+            status=status.HTTP_404_NOT_FOUND,
+        )
+    return Response(payload)

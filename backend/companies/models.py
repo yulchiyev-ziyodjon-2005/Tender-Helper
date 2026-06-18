@@ -104,6 +104,10 @@ class CompanyProfile(models.Model):
                 condition=Q(stir__isnull=True) | Q(stir_skipped=False),
                 name='company_stir_not_skipped',
             ),
+            models.CheckConstraint(
+                condition=Q(stir__isnull=True) | Q(stir__regex=r'^[0-9]{9}$'),
+                name='company_stir_format',
+            ),
         ]
 
     def __str__(self):
@@ -175,6 +179,12 @@ class CompanyRegistryDraft(models.Model):
             models.Index(fields=['user', 'status']),
             models.Index(fields=['provider', 'stir']),
             models.Index(fields=['expires_at']),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(stir__regex=r'^[0-9]{9}$'),
+                name='registry_draft_stir_format',
+            ),
         ]
 
     def __str__(self):

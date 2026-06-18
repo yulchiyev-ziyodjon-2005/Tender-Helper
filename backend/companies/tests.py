@@ -4,6 +4,7 @@ from unittest.mock import Mock
 import requests
 from django.core.cache import cache
 from django.core.checks import run_checks
+from django.db import IntegrityError, transaction
 from django.test import SimpleTestCase, override_settings
 from django.utils import timezone
 from rest_framework import status
@@ -127,6 +128,17 @@ class CompanyRegistryApiTests(APITestCase):
         )
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_database_rejects_invalid_company_stir(self):
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            CompanyProfile.objects.create(
+                user=self.user,
+                stir='12345ABC',
+                company_name='Invalid STIR Company',
+                company_type=CompanyProfile.CompanyType.MCHJ,
+                industry='IT',
+            )
+
         self.assertFalse(CompanyRegistryDraft.objects.exists())
 
     @override_settings(COMPANY_REGISTRY_PROVIDER=SUCCESS_PROVIDER)
