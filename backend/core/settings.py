@@ -8,6 +8,7 @@ Uses python-dotenv for environment variable management.
 import os
 from pathlib import Path
 from datetime import timedelta
+from decimal import Decimal
 
 import dj_database_url
 from django.core.exceptions import ImproperlyConfigured
@@ -34,6 +35,18 @@ if APP_ENV not in {'local', 'test', 'staging', 'production'}:
 def env_bool(name, default=False):
     raw_default = 'True' if default else 'False'
     return os.getenv(name, raw_default).lower() in ('true', '1', 'yes')
+
+
+def env_int(name, default):
+    return int(os.getenv(name, str(default)))
+
+
+def env_float(name, default):
+    return float(os.getenv(name, str(default)))
+
+
+def env_decimal(name, default):
+    return Decimal(os.getenv(name, str(default)))
 
 
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-dev-key-change-in-production')
@@ -323,7 +336,7 @@ EMAIL_BACKEND = os.getenv(
 )
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'TenderHelper <no-reply@tenderhelperai.com>')
 EMAIL_HOST = os.getenv('EMAIL_HOST', '')
-EMAIL_PORT = int(os.getenv('EMAIL_PORT', '465'))
+EMAIL_PORT = env_int('EMAIL_PORT', 465)
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
 EMAIL_USE_SSL = env_bool('EMAIL_USE_SSL', default=True)
@@ -346,16 +359,10 @@ COMPANY_REGISTRY_PROVIDER = os.getenv(
 COMPANY_REGISTRY_API_URL = os.getenv('COMPANY_REGISTRY_API_URL', '')
 COMPANY_REGISTRY_API_TOKEN = os.getenv('COMPANY_REGISTRY_API_TOKEN', '')
 COMPANY_REGISTRY_SOURCE = os.getenv('COMPANY_REGISTRY_SOURCE', 'tax')
-COMPANY_REGISTRY_TIMEOUT_SECONDS = float(
-    os.getenv('COMPANY_REGISTRY_TIMEOUT_SECONDS', '5')
-)
-COMPANY_REGISTRY_RETRY_COUNT = int(os.getenv('COMPANY_REGISTRY_RETRY_COUNT', '1'))
-COMPANY_REGISTRY_CACHE_SECONDS = int(
-    os.getenv('COMPANY_REGISTRY_CACHE_SECONDS', '86400')
-)
-COMPANY_REGISTRY_DRAFT_TTL_SECONDS = int(
-    os.getenv('COMPANY_REGISTRY_DRAFT_TTL_SECONDS', '1800')
-)
+COMPANY_REGISTRY_TIMEOUT_SECONDS = env_float('COMPANY_REGISTRY_TIMEOUT_SECONDS', 5)
+COMPANY_REGISTRY_RETRY_COUNT = env_int('COMPANY_REGISTRY_RETRY_COUNT', 1)
+COMPANY_REGISTRY_CACHE_SECONDS = env_int('COMPANY_REGISTRY_CACHE_SECONDS', 86400)
+COMPANY_REGISTRY_DRAFT_TTL_SECONDS = env_int('COMPANY_REGISTRY_DRAFT_TTL_SECONDS', 1800)
 
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')
 GEMINI_MODEL_ANALYSIS = os.getenv(
@@ -369,7 +376,7 @@ GEMINI_MODEL_EMBEDDING = os.getenv(
 # Compatibility alias for legacy code paths; new analysis code uses
 # GEMINI_MODEL_ANALYSIS explicitly.
 GEMINI_MODEL = GEMINI_MODEL_ANALYSIS
-GEMINI_TIMEOUT = int(os.getenv('GEMINI_TIMEOUT', '30'))
+GEMINI_TIMEOUT = env_int('GEMINI_TIMEOUT', 30)
 ANALYSIS_PROVIDER = os.getenv(
     'ANALYSIS_PROVIDER',
     'analysis.providers.gemini.GeminiAnalysisProvider',
@@ -384,12 +391,11 @@ DOCUMENT_GENERATION_MODEL = os.getenv(
     'DOCUMENT_GENERATION_MODEL',
     GEMINI_MODEL,
 )
-DOCUMENT_GENERATION_TIMEOUT_SECONDS = int(
-    os.getenv('DOCUMENT_GENERATION_TIMEOUT_SECONDS', '30')
+DOCUMENT_GENERATION_TIMEOUT_SECONDS = env_int(
+    'DOCUMENT_GENERATION_TIMEOUT_SECONDS',
+    30,
 )
-DOCUMENT_EXPORT_URL_TTL_SECONDS = int(
-    os.getenv('DOCUMENT_EXPORT_URL_TTL_SECONDS', '300')
-)
+DOCUMENT_EXPORT_URL_TTL_SECONDS = env_int('DOCUMENT_EXPORT_URL_TTL_SECONDS', 300)
 DOCUMENT_PDF_FONT_PATH = os.getenv('DOCUMENT_PDF_FONT_PATH', '')
 
 # Celery. Eager mode is for local development/tests only.
@@ -410,12 +416,8 @@ CELERY_RESULT_SERIALIZER = 'json'
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TIMEZONE = TIME_ZONE
 
-COMPETITOR_MIN_SAMPLE_SIZE = int(
-    os.getenv('COMPETITOR_MIN_SAMPLE_SIZE', '3')
-)
-COMPETITOR_FRESHNESS_SECONDS = int(
-    os.getenv('COMPETITOR_FRESHNESS_SECONDS', '86400')
-)
+COMPETITOR_MIN_SAMPLE_SIZE = env_int('COMPETITOR_MIN_SAMPLE_SIZE', 3)
+COMPETITOR_FRESHNESS_SECONDS = env_int('COMPETITOR_FRESHNESS_SECONDS', 86400)
 COMPETITOR_PERIOD_DAYS = tuple(sorted({
     int(value.strip())
     for value in os.getenv('COMPETITOR_PERIOD_DAYS', '30,90,365').split(',')
@@ -447,15 +449,13 @@ ADMIN_MFA_PROVIDER = os.getenv(
     'ADMIN_MFA_PROVIDER',
     'controlplane.services.mfa.DisabledAdminMFAProvider',
 )
-ADMIN_MFA_SESSION_SECONDS = int(
-    os.getenv('ADMIN_MFA_SESSION_SECONDS', '43200')
-)
-ADMIN_STEP_UP_SECONDS = int(os.getenv('ADMIN_STEP_UP_SECONDS', '600'))
+ADMIN_MFA_SESSION_SECONDS = env_int('ADMIN_MFA_SESSION_SECONDS', 43200)
+ADMIN_STEP_UP_SECONDS = env_int('ADMIN_STEP_UP_SECONDS', 600)
 
 # ──────────────── SMS OTP ────────────────
 SMS_PROVIDER = os.getenv('SMS_PROVIDER', 'eskiz')  # 'console' | 'eskiz'
-OTP_LENGTH = 6
-OTP_EXPIRY_MINUTES = 3
+OTP_LENGTH = env_int('OTP_LENGTH', 6)
+OTP_EXPIRY_MINUTES = env_int('OTP_EXPIRY_MINUTES', 3)
 
 # Eskiz.uz
 ESKIZ_API_URL = os.getenv('ESKIZ_API_URL', 'https://notify.eskiz.uz/api')
@@ -500,14 +500,17 @@ UZUM_SECRET_KEY = os.getenv('UZUM_SECRET_KEY', '')
 # ──────────────── Subscription Limits ────────────────
 # ──────────────── Scraping ────────────────
 TENDER_PORTALS = {
-    'xarid_uzex': 'https://xarid.uzex.uz',
-    'dxarid_uzex': 'https://dxarid.uzex.uz',
-    'exarid_uzex': 'https://exarid.uzex.uz',
-    'e_auksion': 'https://e-auksion.uz',
+    'xarid_uzex': os.getenv('TENDER_PORTAL_XARID_UZEX_URL', 'https://xarid.uzex.uz'),
+    'dxarid_uzex': os.getenv('TENDER_PORTAL_DXARID_UZEX_URL', 'https://dxarid.uzex.uz'),
+    'exarid_uzex': os.getenv('TENDER_PORTAL_EXARID_UZEX_URL', 'https://exarid.uzex.uz'),
+    'e_auksion': os.getenv('TENDER_PORTAL_E_AUKSION_URL', 'https://e-auksion.uz'),
 }
-SCRAPE_INTERVAL_MINUTES = 30
+SCRAPE_INTERVAL_MINUTES = env_int('SCRAPE_INTERVAL_MINUTES', 30)
+SCRAPER_TIMEOUT_SECONDS = env_float('SCRAPER_TIMEOUT_SECONDS', 15)
+SCRAPER_RETRY_COUNT = env_int('SCRAPER_RETRY_COUNT', 3)
+SCRAPER_RETRY_BASE_SECONDS = env_float('SCRAPER_RETRY_BASE_SECONDS', 0.5)
 
 # ──────────────── Financial Constants (O'zbekiston) ────────────────
-VAT_RATE = 0.12          # 12% QQS (Qo'shilgan Qiymat Solig'i)
-OPERATOR_FEE_RATE = 0.0015  # 0.15% UzEx operatorlik komissiya
-ZAKALAT_RATE = 0.03      # 3% zakalat (kafolat puli)
+VAT_RATE = env_decimal('VAT_RATE', '0.12')          # 12% QQS
+OPERATOR_FEE_RATE = env_decimal('OPERATOR_FEE_RATE', '0.0015')
+ZAKALAT_RATE = env_decimal('ZAKALAT_RATE', '0.03')
