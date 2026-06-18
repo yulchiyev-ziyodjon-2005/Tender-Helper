@@ -95,6 +95,19 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  :focus-visible {
+    outline: 2px solid #22d3ee;
+    outline-offset: 3px;
+  }
+
   body {
     font-family: var(--font-sans);
     background-color: var(--color-surface-50);
@@ -204,5 +217,43 @@
 
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     background: var(--color-surface-400);
+  }
+
+  .marketing-grid,
+  .auth-grid {
+    background-image:
+      linear-gradient(rgb(148 163 184 / 0.08) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(148 163 184 / 0.08) 1px, transparent 1px);
+    background-size: 42px 42px;
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .dashboard-glow {
+    box-shadow:
+      0 40px 100px -30px rgb(37 99 235 / 0.38),
+      inset 0 1px 0 rgb(255 255 255 / 0.1);
+  }
+
+  .pulse-soft {
+    animation: pulse-soft 2.4s ease-in-out infinite;
+  }
+
+  @keyframes pulse-soft {
+    0%, 100% { opacity: 0.55; transform: scale(0.96); }
+    50% { opacity: 1; transform: scale(1); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      scroll-behavior: auto !important;
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }

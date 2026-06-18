@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Building2, Save, ArrowLeft, Building, Hash, CreditCard, Tag, Loader2, AlertCircle } from 'lucide-react';
-import apiClient from '../api/client';
+import { fetchCompanyProfile, updateCompanyProfile } from '../api/companies';
 
 export default function SettingsPage() {
   const navigate = useNavigate();
@@ -14,7 +14,7 @@ export default function SettingsPage() {
   const loadProfile = useCallback(async () => {
     setIsLoading(true);
     try {
-      const { data } = await apiClient.get('/company/profile/');
+      const data = await fetchCompanyProfile();
       setProfile({
         companyName: data.company_name || '',
         stir: data.stir || '',
@@ -59,7 +59,7 @@ export default function SettingsPage() {
     setIsSaving(true);
     setError(null);
     try {
-      await apiClient.patch('/company/profile/', {
+      await updateCompanyProfile({
         company_name: profile.companyName,
         stir: profile.stir || null,
         company_type: profile.companyType,

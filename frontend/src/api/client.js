@@ -7,6 +7,12 @@
 
 import axios from 'axios';
 import { API_BASE_URL } from '../utils/constants';
+import {
+  clearTokens,
+  getAccessToken,
+  getRefreshToken,
+  updateTokens,
+} from '../utils/tokenStorage';
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -20,7 +26,7 @@ const apiClient = axios.create({
 // Har bir so'rovga JWT token qo'shish
 apiClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('access_token');
+    const token = getAccessToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -40,7 +46,7 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
-      const refreshToken = localStorage.getItem('refresh_token');
+      const refreshToken = getRefreshToken();
       if (refreshToken) {
         try {
           const { data } = await axios.post(`${API_BASE_URL}/auth/refresh/`, {
@@ -48,24 +54,20 @@ apiClient.interceptors.response.use(
           });
 
           // Yangi tokenlarni saqlash
-          localStorage.setItem('access_token', data.access);
-          if (data.refresh) {
-            localStorage.setItem('refresh_token', data.refresh);
-          }
+          updateTokens(data);
 
           // So'rovni qayta yuborish
           originalRequest.headers.Authorization = `Bearer ${data.access}`;
           return apiClient(originalRequest);
         } catch (refreshError) {
           // Refresh ham ishlamadi — logout
-          localStorage.removeItem('access_token');
-          localStorage.removeItem('refresh_token');
+          clearTokens();
           window.location.href = '/login';
           return Promise.reject(refreshError);
         }
       } else {
         // Refresh token yo'q — logout
-        localStorage.removeItem('access_token');
+        clearTokens();
         window.location.href = '/login';
       }
     }

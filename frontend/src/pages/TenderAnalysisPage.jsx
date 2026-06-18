@@ -3,7 +3,13 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Loader2, AlertTriangle, ExternalLink, RotateCw } from 'lucide-react';
 import AITenderDashboard from '../components/analysis/AITenderDashboard';
 import SmartCalculator from '../components/analysis/SmartCalculator';
-import apiClient from '../api/client';
+import {
+  fetchAnalysisHistory,
+  fetchAnalysisResult,
+  fetchAnalysisStatus,
+  startAnalysis,
+} from '../api/analysis';
+import { fetchTenderById, fetchTenders } from '../api/tenders';
 
 export default function TenderAnalysisPage() {
   const [searchParams] = useSearchParams();
@@ -17,17 +23,12 @@ export default function TenderAnalysisPage() {
   const [error, setError] = useState(null);
   const [analysisData, setAnalysisData] = useState(null);
   const [tenderData, setTenderData] = useState(null);
-  const [loadingStep, setLoadingStep] = useState(0);
+  const [loadingProgress, setLoadingProgress] = useState(0);
 
   const runAnalysis = useCallback(async () => {
     setIsLoading(true);
     setError(null);
-    setLoadingStep(0);
-    
-    // Simulate progress steps
-    const progressInterval = setInterval(() => {
-      setLoadingStep(prev => prev < 3 ? prev + 1 : prev);
-    }, 2500);
+    setLoadingProgress(0);
     
     try {
       let tender = null;
@@ -36,18 +37,15 @@ export default function TenderAnalysisPage() {
       if (lotId) {
         // Direct UUID lookup
         setAnalysisPhase('Tender ma\'lumotlari yuklanmoqda...');
-        const { data } = await apiClient.get(`/tenders/${lotId}/`);
-        tender = data;
+        tender = await fetchTenderById(lotId);
       } else {
         // Search by lot_number or free text
         const searchTerm = lotNumber || freeQuery;
         setAnalysisPhase(`"${searchTerm}" qidirilmoqda...`);
-        const { data } = await apiClient.get(`/tenders/?search=${encodeURIComponent(searchTerm)}`);
-        const results = Array.isArray(data) ? data : (data.results || []);
+        const { results } = await fetchTenders({ search: searchTerm });
         
         if (results.length === 0) {
           setError(`"${searchTerm}" bo'yicha tender topilmadi. Avval bazaga tender qo'shing.`);
-          clearInterval(progressInterval);
           setIsLoading(false);
           return;
         }
@@ -56,20 +54,58 @@ export default function TenderAnalysisPage() {
 
       setTenderData(tender);
 
-      // Step 2: Run AI Analysis via backend
-      setAnalysisPhase('AI hujjatlarni tahlil qilmoqda...');
-      const { data: analysis } = await apiClient.post('/analysis/start/', {
-        lot_id: tender.id
-      });
+      // Step 2: Reuse an existing analysis before consuming a new quota unit.
+      const reusableAnalysis = await findReusableAnalysis(tender.id);
+      if (reusableAnalysis) {
+        if (reusableAnalysis.analysis_status === 'completed') {
+          setAnalysisPhase('Oldingi AI tahlil natijasi ochilmoqda...');
+          setAnalysisData(reusableAnalysis);
+          setLoadingProgress(100);
+          return;
+        }
 
+        setAnalysisPhase('Mavjud AI tahlil jarayoni tekshirilmoqda...');
+        const analysis = await pollAnalysisRun({
+          id: reusableAnalysis.id,
+          status_url: `/analysis/${reusableAnalysis.id}/status/`,
+          result_url: `/analysis/${reusableAnalysis.id}/result/`,
+        }, (statusPayload) => {
+          setLoadingProgress(statusPayload.progress_percent || 0);
+          const phaseLabels = {
+            pending: 'AI tahlil navbatda...',
+            processing: 'AI risk va moslik omillarini tekshirmoqda...',
+            success: 'AI tahlil yakunlandi...',
+            failed: 'AI tahlil xatolik bilan yakunlandi...',
+          };
+          setAnalysisPhase(phaseLabels[statusPayload.status] || 'AI tahlil bajarilmoqda...');
+        });
+        setAnalysisData(analysis);
+        setLoadingProgress(100);
+        return;
+      }
+
+      // Step 3: Run AI Analysis via backend
+      setAnalysisPhase('AI hujjatlarni tahlil qilmoqda...');
+      const run = await startAnalysis(tender.id);
+      setLoadingProgress(run.progress_percent || 0);
+
+      const analysis = await pollAnalysisRun(run, (statusPayload) => {
+        setLoadingProgress(statusPayload.progress_percent || 0);
+        const phaseLabels = {
+          pending: 'AI tahlil navbatga qo‘yildi...',
+          processing: 'AI risk va moslik omillarini tekshirmoqda...',
+          success: 'AI tahlil yakunlandi...',
+          failed: 'AI tahlil xatolik bilan yakunlandi...',
+        };
+        setAnalysisPhase(phaseLabels[statusPayload.status] || 'AI tahlil bajarilmoqda...');
+      });
       setAnalysisData(analysis);
-      setLoadingStep(4);
+      setLoadingProgress(100);
     } catch (err) {
       console.error('Analysis error:', err);
-      const msg = err.response?.data?.message || err.response?.data?.error || err.message;
+      const msg = err.response?.data?.message || err.response?.data?.error_code || err.response?.data?.error || err.message;
       setError(`Tahlil jarayonida xatolik: ${msg}`);
     } finally {
-      clearInterval(progressInterval);
       setIsLoading(false);
     }
   }, [freeQuery, lotId, lotNumber]);
@@ -85,6 +121,7 @@ export default function TenderAnalysisPage() {
 
   if (isLoading) {
     const steps = ['Qidiruv', 'Hujjatlar', 'Red Flags', 'Xulosa'];
+    const loadingStep = Math.min(3, Math.floor((loadingProgress || 0) / 25));
     return (
       <div className="min-h-screen bg-surface-50 dark:bg-surface-950 flex flex-col items-center justify-center p-4">
         <div className="relative mb-6">
@@ -207,6 +244,41 @@ export default function TenderAnalysisPage() {
       </main>
     </div>
   );
+}
+
+async function findReusableAnalysis(tenderId) {
+  const { results: analyses } = await fetchAnalysisHistory();
+  const candidates = analyses.filter((analysis) => (
+    analysis.tender_lot?.id === tenderId
+    && analysis.analysis_status !== 'failed'
+  ));
+  return candidates[0] || null;
+}
+
+async function pollAnalysisRun(run, onStatus) {
+  const statusUrl = run.status_url || `/analysis/${run.id}/status/`;
+  const resultUrl = run.result_url || `/analysis/${run.id}/result/`;
+  const startedAt = Date.now();
+  const timeoutMs = 120000;
+
+  while (Date.now() - startedAt < timeoutMs) {
+    const statusPayload = await fetchAnalysisStatus(statusUrl);
+    onStatus?.(statusPayload);
+    if (statusPayload.status === 'success') {
+      return fetchAnalysisResult(resultUrl);
+    }
+    if (statusPayload.status === 'failed') {
+      throw new Error(statusPayload.error_message || 'AI provider is temporarily unavailable');
+    }
+    await wait(1500);
+  }
+  throw new Error('AI tahlil belgilangan vaqtda yakunlanmadi.');
+}
+
+function wait(ms) {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
 }
 
 function getPlatformLabel(source) {

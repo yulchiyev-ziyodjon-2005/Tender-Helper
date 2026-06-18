@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import apiClient from '../api/client';
+import { exchangeGoogleOAuthCode } from '../api/auth';
 import useAuthStore from '../store/authStore';
 
 export default function GoogleCallbackPage() {
@@ -17,11 +17,20 @@ export default function GoogleCallbackPage() {
     }
 
     let active = true;
-    apiClient.post('/auth/google/exchange/', { code })
-      .then(({ data }) => {
+    exchangeGoogleOAuthCode(code)
+      .then((data) => {
         if (!active) return;
-        login(data.tokens, data.user);
-        navigate(data.is_new_user ? '/onboarding' : (data.next || '/dashboard'), { replace: true });
+        login(data.tokens, data.user, {
+          requiresPasswordChange: data.force_password_change,
+        });
+        navigate(
+          data.force_password_change
+            ? '/change-password'
+            : data.is_new_user
+              ? '/onboarding'
+              : (data.next || '/dashboard'),
+          { replace: true },
+        );
       })
       .catch(() => {
         if (active) {

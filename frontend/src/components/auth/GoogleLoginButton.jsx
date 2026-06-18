@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { API_BASE_URL } from '../../utils/constants';
+import {
+  fetchGoogleOAuthConfig,
+  googleOAuthStartUrl,
+} from '../../api/auth';
 
 export default function GoogleLoginButton({ disabled = false }) {
   const { t } = useTranslation();
@@ -13,8 +16,7 @@ export default function GoogleLoginButton({ disabled = false }) {
   useEffect(() => {
     let cancelled = false;
 
-    fetch(`${API_BASE_URL}/auth/google/config/`)
-      .then((response) => response.json())
+    fetchGoogleOAuthConfig()
       .then((data) => {
         if (cancelled) return;
         setConfig({
@@ -39,8 +41,7 @@ export default function GoogleLoginButton({ disabled = false }) {
 
   const handleGoogleLogin = () => {
     if (!config.enabled) return;
-    const next = encodeURIComponent('/dashboard');
-    window.location.href = `${API_BASE_URL}/auth/google/start/?next=${next}`;
+    window.location.href = googleOAuthStartUrl('/dashboard');
   };
 
   const isDisabled = disabled || config.isLoading || !config.enabled;

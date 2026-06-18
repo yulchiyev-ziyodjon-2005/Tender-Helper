@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, BarChart3, Calculator, LogOut, SlidersHorizontal, Calendar, Building2, CheckCircle2, Loader2, AlertCircle, Settings, ArrowRight } from 'lucide-react';
+import { Search, BarChart3, Calculator, LogOut, SlidersHorizontal, Calendar, Building2, CheckCircle2, Loader2, AlertCircle, Settings, ArrowRight, Users } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import ThemeToggle from '../components/ui/ThemeToggle';
 import LanguageSwitcher from '../components/ui/LanguageSwitcher';
-import apiClient from '../api/client';
+import { fetchTenders as fetchTendersApi } from '../api/tenders';
 import { useTranslation } from 'react-i18next';
 
 function extractLotNumber(query) {
@@ -40,13 +40,14 @@ export default function DashboardPage() {
         queryParams.set('search', cleanSearch);
       }
       if (params.platform_source) queryParams.set('platform_source', params.platform_source);
-      if (params.start_price_min) queryParams.set('start_price_min', params.start_price_min);
-      if (params.start_price_max) queryParams.set('start_price_max', params.start_price_max);
+      if (params.min_price) queryParams.set('min_price', params.min_price);
+      if (params.max_price) queryParams.set('max_price', params.max_price);
       if (params.category) queryParams.set('category', params.category);
       
-      const url = `/tenders/?${queryParams.toString()}`;
-      const { data } = await apiClient.get(url);
-      setTenders(Array.isArray(data) ? data : (data.results || []));
+      const { results } = await fetchTendersApi(
+        Object.fromEntries(queryParams.entries()),
+      );
+      setTenders(results);
     } catch {
       setError(t('error_loading'));
     } finally {
@@ -60,8 +61,8 @@ export default function DashboardPage() {
       fetchTenders({
         search: searchQuery,
         platform_source: selectedPlatform,
-        start_price_min: priceMin,
-        start_price_max: priceMax,
+        min_price: priceMin,
+        max_price: priceMax,
         category: selectedCategory,
       });
     }, 500); // 500ms debounce
@@ -134,6 +135,13 @@ export default function DashboardPage() {
             <span className="hidden sm:inline-flex items-center gap-1 text-sm font-medium text-surface-600 bg-surface-100 dark:bg-surface-800 px-3 py-1.5 rounded-full border border-surface-200 dark:border-surface-700">
               <CheckCircle2 className="w-4 h-4 text-success-500" /> {t('free_plan')}
             </span>
+            <button
+              onClick={() => navigate('/team')}
+              className="p-2 text-surface-500 hover:text-primary-600 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+              title="Business Team Hub"
+            >
+              <Users className="w-5 h-5" />
+            </button>
             <button
               onClick={() => navigate('/settings')}
               className="p-2 text-surface-500 hover:text-primary-600 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"

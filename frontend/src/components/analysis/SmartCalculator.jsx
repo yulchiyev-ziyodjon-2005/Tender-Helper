@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Calculator, AlertTriangle, TrendingDown, TrendingUp, Info, ExternalLink } from 'lucide-react';
-import apiClient from '../../api/client';
+import { calculateAnalysis } from '../../api/analysis';
 
 const VAT_RATE = 0.12;
 const UZEX_RATE = 0.0015;
@@ -33,7 +33,7 @@ export default function SmartCalculator({ tenderPrice = 0, analysisId }) {
     // Sync with backend if analysisId is provided
     if (analysisId && rawCost > 0) {
       const syncDebounce = setTimeout(() => {
-        apiClient.post(`/analysis/${analysisId}/calculate/`, {
+        calculateAnalysis(analysisId, {
           raw_material_cost: rawCost,
           logistics_cost: 0,
           labor_cost: 0,

@@ -10,16 +10,45 @@ export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1';
 // ──────────── Auth ────────────
 // ──────────── Subscription Limits ────────────
 export const TARIFF_LIMITS = {
-  free: { analysis_per_month: 4, label: 'Bepul' },
-  pro: { analysis_per_month: Infinity, label: 'Pro' },
-  enterprise: { analysis_per_month: Infinity, label: 'Enterprise' },
+  free: {
+    label: 'Bepul',
+    ai_analysis_monthly: 4,
+    sms_allowed_monthly: 0,
+    daily_sms_cap: 0,
+  },
+  pro: {
+    label: 'Pro',
+    ai_analysis_monthly: 100,
+    sms_allowed_monthly: 100,
+    daily_sms_cap: 5,
+  },
+  business: {
+    label: 'Business',
+    ai_analysis_monthly: 250,
+    sms_allowed_monthly: 500,
+    daily_sms_cap: 20,
+  },
+  enterprise: {
+    label: 'Enterprise',
+    ai_analysis_monthly: 500,
+    sms_allowed_monthly: 500,
+    daily_sms_cap: 20,
+  },
 };
+
+export function resolveTariffLimits(planCode, entitlementPayload = null) {
+  const fallback = TARIFF_LIMITS[planCode] || TARIFF_LIMITS.free;
+  return {
+    ...fallback,
+    ...(entitlementPayload?.limits || {}),
+  };
+}
 
 // ──────────── Pricing ────────────
 export const PRICING = {
   free: { price_usd: 0, price_uzs: 0 },
-  pro: { price_usd: 15, price_uzs: 195_000 },
-  enterprise: { price_usd: 50, price_uzs: 650_000 },
+  pro: { price_uzs: 350_000, annual_uzs: 3_360_000 },
+  business: { price_uzs: 950_000, annual_uzs: 9_120_000 },
 };
 
 // ──────────── Company Types ────────────
